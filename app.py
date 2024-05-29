@@ -397,12 +397,24 @@ def delete_group(group_id):
 
     email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-    cur.execute("DELETE FROM `groups` WHERE id = %s AND created_by = %s", (group_id, email))  # Elimina el grupo si fue creado por el usuario
-    mysql.connection.commit()  # Confirma los cambios en la base de datos
-    cur.close()  # Cierra el cursor
 
-    flash('Grupo eliminado correctamente', 'success')  # Muestra un mensaje de éxito
+    try:
+        # Primero, elimina todas las tareas relacionadas con el grupo
+        cur.execute("DELETE FROM group_tasks WHERE group_id = %s", (group_id,))
+        mysql.connection.commit()
+
+        # Luego, elimina el grupo
+        cur.execute("DELETE FROM `groups` WHERE id = %s AND created_by = %s", (group_id, email))
+        mysql.connection.commit()
+
+        flash('Grupo y tareas relacionadas eliminados correctamente', 'success')  # Muestra un mensaje de éxito
+    except ProgrammingError as e:
+        flash(f'Error al eliminar el grupo: {e}', 'danger')  # Muestra un mensaje de error en caso de fallo
+    finally:
+        cur.close()  # Cierra el cursor
+
     return redirect(url_for('groups'))  # Redirige a la página de grupos
+
 
 
 # Ruta para mostrar el formulario de edición de grupo
