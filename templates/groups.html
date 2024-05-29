@@ -1,0 +1,41 @@
+{% extends 'slidebar.html' %}
+
+{% block content %}
+<main class="d-flex">
+    <div class="container-fluid row m-0 vh-100 justify-content-center align-items-center">
+        <div class="card shadow w-75">
+            <div class="card-body">
+                <!-- Mostrar la lista de grupos -->
+                <h1 class="mb-4">Lista de Grupos</h1>
+                <table class="table table-striped table-bordered">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre del Grupo</th>
+                            <th>Miembros</th>
+                            <th>Creado en</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in user_groups %}
+                        <tr>
+                            <td>{{ group.id }}</td>
+                            <td>{{ group.group_name }}</td>
+                            <td>{{ group.group_members }}</td>
+                            <td>{{ group.created_at }}</td>
+                            <td class="d-flex justify-content-around">
+                                <form action="{{ url_for('delete_group', group_id=group.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de que deseas eliminar este grupo?');">Eliminar</button>
+                                </form>
+                                <a href="{{ url_for('edit_group', group_id=group.id) }}" class="btn btn-primary btn-sm">Editar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

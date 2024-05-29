@@ -1,0 +1,29 @@
+{% extends 'slidebar.html' %}
+
+{% block content %}
+    <main class="d-flex align-items-center justify-content-center vh-100">
+        <div class="container-lg">
+            <div class="card shadow">
+                <div class="card-body">
+
+                    <!-- Encabezado -->
+                    <h3 class="text-center mb-4">APLICACIÓN DE TAREAS</h3>
+                    <h5 class="text-center mb-4">Mis Grupos</h5>
+
+                    <!-- Lista de Grupos -->
+                    <div class="list-group">
+                        {% for group in user_groups %}
+                            <a href="{{ url_for('group_tasks', group_id=group.id) }}" class="list-group-item list-group-item-action">{{ group.group_name }}</a>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Botón de Volver a Tareas -->
+                    <form action="/tasks" method="get">
+                        <button type="submit" class="btn btn-primary w-100 mt-4">Volver a Tareas</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </main>
+    {% endblock %}

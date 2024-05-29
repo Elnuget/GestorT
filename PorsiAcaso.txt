@@ -1,0 +1,87 @@
+ 
+ --------------------------------------------------------------------------
+ LO SIGUIENTE FUE USADO PARA DESPLEGAR NOTIFICACIONES EN FLASK
+ 
+ <div class="card shadow w-75">
+            <!-- Mostrar mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            <form action="/user-groups" method="get">
+                <button type="submit" class="btn btn-primary w-100 mt-3">Volver a Mis Grupos</button>
+            </form>
+        </div> 
+
+
+-----------------------------------------------------------------
+LO SIGUIENTE FUE USADO PARA PRUEBAS EN tasks.html PARA LA CARGA DE IMÁGENES DE PERSON
+
+        
+{% if user_image_url %}
+<img src="{{ user_image_url }}"  style="width: 50px; height: 50px; border-radius: 50%;">
+{% else %}
+<div class="rounded-circle"
+    style="width: 50px; height: 50px; background-color: #ccc; display: flex; justify-content: center; align-items: center; font-size: 24px;">
+    {{ session['name'][0] }}{{ session['surnames'][0] }}
+</div>
+{% endif %}
+
+
+<!-- Botón para abrir el formulario emergente -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadProfileImageModal">
+    Cambiar Imagen de Perfil
+</button>
+
+<!-- Formulario emergente para cambiar la imagen de perfil -->
+<div class="modal fade" id="uploadProfileImageModal" tabindex="-1" aria-labelledby="uploadProfileImageModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadProfileImageModalLabel">Cambiar Imagen de Perfil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('upload_profile_image') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Seleccionar Archivo</label>
+                        <input type="file" class="form-control" id="file" name="file">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Cargar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+----------------------------------------------------------------
+Código anterior al arreglo del error de la imagen de perfil
+
+
+function fetchProfileImage() {
+            fetch('/get-profile-image-url-master')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('No se pudo obtener la URL de la imagen de perfil');
+                    }
+                })
+                .then(data => {
+                    document.getElementById('user-image-container').innerHTML = `<img src="${data.profile_image_url}" alt="User Image" style="width: 50px; height: 50px; border-radius: 50%;">`;
+                })
+                .catch(error => console.error('Error fetching profile image URL:', error));
+        }
+
+
+        -------------------------TEXTO DE PRUEBA 2 -------------

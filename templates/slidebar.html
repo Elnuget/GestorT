@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }}</title>
+    <!-- Google Font: Source Sans Pro -->
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/fontawesome-free/css/all.min.css') }}">
+    <!-- Ionicons -->
+    <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <!-- Tempusdominus Bootstrap 4 -->
+    <link rel="stylesheet"
+        href="{{ url_for('static', filename='plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css') }}">
+    <!-- iCheck -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
+    <!-- JQVMap -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/jqvmap/jqvmap.min.css') }}">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/adminlte.min.css') }}">
+    <!-- overlayScrollbars -->
+    <link rel="stylesheet"
+        href="{{ url_for('static', filename='plugins/overlayScrollbars/css/OverlayScrollbars.min.css') }}">
+    <!-- Daterange picker -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/daterangepicker/daterangepicker.css') }}">
+    <!-- summernote -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='plugins/summernote/summernote-bs4.min.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<style>
+    .notification-active {
+        background-color: #dff0d8;
+        /* verde claro para activas */
+        color: #3c763d;
+    }
+
+    .notification-inactive {
+        background-color: #a0a0a0;
+        /* rojo claro para inactivas */
+        color: #000000;
+    }
+</style>
+
+<body class="hold-transition sidebar-mini layout-fixed">
+    <div class="wrapper">
+
+        <!-- Preloader -->
+        <div class="preloader flex-column justify-content-center align-items-center">
+            <img class="animation__shake" src="{{ url_for('static', filename='dist/img/AdminLTELogo.png') }}"
+                alt="AdminLTELogo" height="60" width="60">
+        </div>
+
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <!-- Left navbar links -->
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+                </li>
+
+            </ul>
+
+            <!-- Right navbar links -->
+            <ul class="navbar-nav ml-auto">
+                <!-- Navbar Search -->
+                <li class="nav-item">
+
+                    <div class="navbar-search-block">
+                        <form class="form-inline">
+                            <div class="input-group input-group-sm">
+                                <input class="form-control form-control-navbar" type="search" placeholder="Search"
+                                    aria-label="Search">
+                                <div class="input-group-append">
+                                    <button class="btn btn-navbar" type="submit">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button class="btn btn-navbar" type="button" data-widget="navbar-search">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </li>
+
+
+                <!-- Messages Dropdown Menu -->
+                <li class="nav-item dropdown">
+
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+
+                    </div>
+                </li>
+                <!-- Notifications Dropdown Menu -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link" data-toggle="dropdown" href="#">
+                        <i class="far fa-bell"></i>
+                        <span class="badge badge-warning navbar-badge" id="notification-count">0</span>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                        <span class="dropdown-item dropdown-header" id="notification-header">0 Notificaciones</span>
+                        <div class="dropdown-divider"></div>
+                        <div id="notification-list">
+                            <!-- Aquí se insertarán las notificaciones -->
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="dropdown-item dropdown-footer">Fin de las notificaciones</a>
+                    </div>
+                </li>
+
+                <li class="nav-item">
+
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" onclick="confirmLogout()" href="#" role="button">
+                        <i class="fas fa-sign-out-alt"></i>Cerrar sesión
+                    </a>
+                </li>
+                <li class="nav-item">
+
+                </li>
+            </ul>
+        </nav>
+        <!-- /.navbar -->
+
+        <!-- Main Sidebar Container -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <!-- Brand Logo -->
+            <a href="{{ url_for('tasks') }}" class="brand-link">
+                <img src="{{ url_for('static', filename='dist/img/AdminLTELogo.png') }}" alt="AdminLTE Logo"
+                    class="brand-image img-circle elevation-3" style="opacity: .8">
+                <span class="brand-text font-weight-light">MIS TAREAS</span>
+            </a>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Sidebar user panel (optional) -->
+                <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+                    <div class="image">
+                        <img id="user-image-container" src="/uploaded-profile-image/perfil-por-defecto.png"
+                            class="img-circle elevation-2" alt="User Image">
+
+                    </div>
+                    <div class="info">
+                        <a href="{{ url_for('tasks') }}" class="d-block">{{ session['name'] }}
+                        </a>
+                        <a href="#" class="d-block" data-toggle="modal" data-target="#uploadProfileImageModal">Cambiar
+                            foto de
+                            perfil</a>
+
+                    </div>
+                </div>
+
+
+
+
+                <!-- SidebarSearch Form -->
+                <div class="form-inline">
+                    <div class="input-group" data-widget="sidebar-search">
+                        <input class="form-control form-control-sidebar" type="search" placeholder="Search"
+                            aria-label="Search">
+                        <div class="input-group-append">
+                            <button class="btn btn-sidebar">
+                                <i class="fas fa-search fa-fw"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar Menu -->
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu"
+                        data-accordion="false">
+                        <li class="nav-item">
+                            <a href="{{ url_for('home') }}" class="nav-link">
+                                <i class="nav-icon fas fa-home"></i>
+                                <p>Inicio</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('tasks') }}" class="nav-link">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Tareas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('groups') }}" class="nav-link">
+                                <i class="nav-icon fas fa-users"></i>
+                                <p>Gestionar Grupos</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ url_for('create_group') }}" class="nav-link">
+                                <i class="nav-icon fas fa-plus-circle"></i>
+                                <p>Crear Grupo</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" onclick="toggleGroups();">
+                                <i class="nav-icon fas fa-layer-group"></i>
+                                <p>Mis Grupos</p>
+                                <i class="fas fa-angle-left right"></i>
+                            </a>
+                            <ul class="nav nav-treeview" style="display: none;" id="group-list">
+                                {% for group in user_groupsg %}
+                                <li class="nav-item d-flex justify-content-between align-items-center">
+                                    <a href="{{ url_for('group_tasks', group_id=group.id) }}" class="nav-link">
+                                        <i class="far fa-circle nav-icon"></i>
+                                        <p>{{ group.group_name }}</p>
+                                        <form action="{{ url_for('leave_group', group_id=group.id) }}" method="post"
+                                            class="d-inline">
+                                            <button type="submit" class="btn btn-link p-0"
+                                                onclick="return confirm('¿Estás seguro de que deseas abandonar este grupo?');">
+                                                <i class="fas fa-sign-out-alt text-danger"></i>
+                                            </button>
+                                        </form>
+                                    </a>
+
+                                </li>
+                                {% endfor %}
+
+                            </ul>
+                        </li>
+                </nav>
+                <!-- /.sidebar-menu -->
+            </div>
+            <!-- /.sidebar -->
+        </aside>
+        <!-- Formulario emergente para cambiar la imagen de perfil -->
+        <div class="modal fade" id="uploadProfileImageModal">
+            <div class="modal-dialog">
+                <div class="modal-content bg-secondary">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="uploadProfileImageModalLabel">Cambiar Imagen de Perfil</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="upload-profile-form" action="{{ url_for('upload_profile_image') }}" method="post"
+                            enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Seleccionar Archivo</label>
+                                <input type="file" class="form-control" id="file" name="file">
+                            </div>
+                            <button type="submit" class="btn btn-outline-light">Cargar</button>
+                        </form>
+                    </div>
+
+                </div>
+                <!-- /.modal-content -->
+            </div>
+            <!-- /.modal-dialog -->
+        </div>
+        <!-- /.modal -->
+        <!-- Main content -->
+        <!-- Content Wrapper. Contains page content -->
+        <div class="content-wrapper">
+            <section class="content">
+                {% block content %}
+                <!-- Page-specific content will go here -->
+                {% endblock %}
+            </section>
+        </div>
+        <footer class="main-footer">
+            <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong>
+            All rights reserved.
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 3.2.0
+            </div>
+        </footer>
+
+        <!-- Control Sidebar -->
+        <aside class="control-sidebar control-sidebar-dark">
+            <!-- Control sidebar content goes here -->
+        </aside>
+        <!-- /.control-sidebar -->
+    </div>
+    <!-- ./wrapper -->
+
+    <!-- jQuery -->
+    <script src="{{ url_for('static', filename='plugins/jquery/jquery.min.js') }}"></script>
+    <!-- jQuery UI 1.11.4 -->
+    <script src="{{ url_for('static', filename='plugins/jquery-ui/jquery-ui.min.js') }}"></script>
+    <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        // Vincula el widget de jQuery UI 'button' al nombre 'uibutton' para evitar conflictos con Bootstrap
+        $.widget.bridge('uibutton', $.ui.button)
+    
+        // Función para confirmar la acción de cerrar sesión
+        function confirmLogout() {
+            Swal.fire({
+                title: '¿Estás seguro de que quieres cerrar sesión?',  // Título del cuadro de diálogo
+                icon: 'warning',  // Icono de advertencia
+                showCancelButton: true,  // Muestra el botón de cancelar
+                confirmButtonColor: '#3085d6',  // Color del botón de confirmación
+                cancelButtonColor: '#d33',  // Color del botón de cancelar
+                cancelButtonText: 'Cancelar',  // Texto del botón de cancelar
+                confirmButtonText: 'Sí, ¡quiero salir!'  // Texto del botón de confirmación
+            }).then((result) => {
+                if (result.isConfirmed) {  // Si el usuario confirma
+                    window.location.href = '/logout';  // Redirige a la ruta de cierre de sesión
+                }
+            });
+        }
+    
+        // Función para obtener la URL de la imagen de perfil del usuario
+        function fetchProfileImage() {
+            fetch('/get-profile-image-url-master')  // Realiza una solicitud para obtener la URL de la imagen de perfil
+                .then(response => {
+                    if (response.ok) {  // Si la respuesta es exitosa
+                        return response.json();  // Devuelve la respuesta en formato JSON
+                    } else {
+                        throw new Error('No se pudo obtener la URL de la imagen de perfil');  // Lanza un error si la respuesta no es exitosa
+                    }
+                })
+                .then(data => {
+                    document.getElementById('user-image-container').src = data.profile_image_url;  // Actualiza la imagen de perfil en el DOM
+                })
+                .catch(error => console.error('Error fetching profile image URL:', error));  // Maneja errores en la solicitud
+        }
+    
+        // Llama a la función para obtener la imagen de perfil cuando se carga la página
+        fetchProfileImage();
+    
+        // Función para actualizar el título de la página
+        function updateTitle(pageName) {
+            document.title = pageName + ' | Task Manager';  // Actualiza el título del documento con el nombre de la página
+        }
+    </script>
+    
+    <script>
+        // Añade un evento al formulario de subida de imagen de perfil
+        document.getElementById('upload-profile-form').addEventListener('submit', function (event) {
+            event.preventDefault();  // Evita que el formulario se envíe normalmente
+            const formData = new FormData(this);  // Crea un objeto FormData con los datos del formulario
+    
+            fetch(this.action, {
+                method: 'POST',  // Utiliza el método POST para enviar los datos
+                body: formData  // Incluye los datos del formulario en la solicitud
+            })
+                .then(response => {
+                    if (response.ok) {  // Si la respuesta es exitosa
+                        return response.json();  // Devuelve la respuesta en formato JSON
+                    } else {
+                        return response.json().then(data => Promise.reject(data.error));  // Rechaza la promesa con el mensaje de error del servidor
+                    }
+                })
+                .then(data => {
+                    fetchProfileImage();  // Actualiza la imagen de perfil después de cargarla correctamente
+                    Swal.fire({
+                        icon: 'success',  // Muestra un icono de éxito
+                        title: 'Éxito',  // Título del cuadro de diálogo
+                        text: data.message  // Muestra el mensaje de éxito del servidor
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.reload();  // Reinicia la página después de cerrar el mensaje
+                        }
+                    });
+                })
+                .catch(error => {
+                    Swal.fire({
+                        icon: 'error',  // Muestra un icono de error
+                        title: 'Error',  // Título del cuadro de diálogo
+                        text: error  // Muestra el mensaje de error específico del servidor
+                    });
+                });
+        });
+    </script>
+    
+    <script>
+        // Añade un evento al campo de entrada de archivos para obtener el tamaño del archivo
+        document.getElementById('file').addEventListener('change', function (event) {
+            const fileInput = event.target;  // Obtiene el elemento de entrada de archivo
+            const file = fileInput.files[0];  // Obtiene el archivo seleccionado
+            const fileSizeMB = file.size / (1024 * 1024);  // Convierte el tamaño del archivo a MB
+            document.cookie = `file_size_mb=${fileSizeMB}; path=/`;  // Guarda el tamaño del archivo en una cookie
+        });
+    </script>
+    
+
+    <!-- Bootstrap 4 -->
+    <script src="{{ url_for('static', filename='plugins/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <!-- ChartJS -->
+    <script src="{{ url_for('static', filename='plugins/chart.js/Chart.min.js') }}"></script>
+    <!-- Sparkline -->
+    <script src="{{ url_for('static', filename='plugins/sparklines/sparkline.js') }}"></script>
+    <!-- JQVMap -->
+    <script src="{{ url_for('static', filename='plugins/jqvmap/jquery.vmap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/jqvmap/maps/jquery.vmap.usa.js') }}"></script>
+    <!-- jQuery Knob Chart -->
+    <script src="{{ url_for('static', filename='plugins/jquery-knob/jquery.knob.min.js') }}"></script>
+    <!-- daterangepicker -->
+    <script src="{{ url_for('static', filename='plugins/moment/moment.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/daterangepicker/daterangepicker.js') }}"></script>
+    <!-- Tempusdominus Bootstrap 4 -->
+    <script
+        src="{{ url_for('static', filename='plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js') }}"></script>
+    <!-- Summernote -->
+    <script src="{{ url_for('static', filename='plugins/summernote/summernote-bs4.min.js') }}"></script>
+    <!-- overlayScrollbars -->
+    <script
+        src="{{ url_for('static', filename='plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
+    <!-- AdminLTE App -->
+    <script src="{{ url_for('static', filename='dist/js/adminlte.js') }}"></script>
+    <!-- AdminLTE for demo purposes -->
+    <script src="{{ url_for('static', filename='dist/js/demo.js') }}"></script>
+    <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+    <script src="{{ url_for('static', filename='dist/js/pages/dashboard.js') }}"></script>
+
+    <!-- Para notificaciones -->
+    <script>
+        function loadNotifications() {
+            fetch('/api/notifications')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Failed to fetch notifications');
+                    }
+                })
+                .then(data => {
+                    // Invertir el orden del array de notificaciones
+                    data.reverse();
+
+                    const notificationContainer = document.getElementById('notification-list');
+                    const notificationCount = document.getElementById('notification-count');
+                    const notificationHeader = document.getElementById('notification-header');
+
+                    // Limpiar las notificaciones existentes
+                    notificationContainer.innerHTML = '';
+
+                    // Filtrar por notificaciones activas para actualizar el contador
+                    const activeNotifications = data.filter(n => n.status === 'Activa');
+
+                    // Actualizar el recuento de notificaciones solo para las activas
+                    notificationCount.textContent = activeNotifications.length;
+                    notificationHeader.textContent = `${activeNotifications.length} Notifications`;
+
+                    // Insertar todas las notificaciones, aplicando estilos según el estado
+                    data.forEach(notification => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'dropdown-item';
+                        item.innerHTML = `<i class="fas fa-users mr-2"></i> <p>${notification.notification}</p>`;
+                        // Aplicar clases basadas en el estado
+                        item.classList.add(notification.status === 'Activa' ? 'notification-active' : 'notification-inactive');
+                        notificationContainer.appendChild(item);
+                    });
+                })
+                .catch(error => console.error('Error loading notifications:', error));
+        }
+
+        // Cargar notificaciones al cargar la página y repetir cada 5 segundos
+        document.addEventListener('DOMContentLoaded', () => {
+            loadNotifications(); // Carga inicial
+            setInterval(loadNotifications, 5000); // Repetir cada 5 segundos
+        });
+    </script>
+
+    <script>
+        document.getElementById('file').addEventListener('change', function (event) {
+            const fileInput = event.target;
+            const file = fileInput.files[0];
+            const fileSizeMB = file.size / (1024 * 1024); // Convertir el tamaño del archivo a MB
+            document.cookie = `file_size_mb=${fileSizeMB}; path=/`; // Guardar el tamaño del archivo en una cookie
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const notificationButton = document.querySelector('.nav-link[data-toggle="dropdown"]');
+
+            notificationButton.addEventListener('click', function () {
+                fetch('/api/update-notifications', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // Asegúrate de que se manejan correctamente las credenciales y las CSRF tokens si es necesario
+                    },
+                    body: JSON.stringify({ email: '{{ session["email"] }}' }) // Envía el correo de la sesión si es necesario identificar las notificaciones por usuario
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Notifications updated', data);
+                        loadNotifications(); // Recargar las notificaciones para reflejar los cambios
+                    })
+                    .catch(error => console.error('Error updating notifications:', error));
+            });
+        });
+    </script>
+
+</body>
+
+</html>

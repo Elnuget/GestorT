@@ -1,0 +1,274 @@
+{% extends 'slidebar.html' %}
+
+{% block content %}
+<script src="{{ url_for('static', filename='custom.js') }}"></script>
+<style>
+    .custom-margin-bottom {
+        margin-bottom: 40px;
+    }
+    .chat-box {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 300px;
+        max-height: 400px;
+        background: white;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        overflow: hidden; /* Eliminar la barra de desplazamiento del chat-box */
+    }
+    .chat-header, .chat-footer {
+        padding: 10px;
+        background: #007bff;
+        color: white;
+    }
+    .chat-header {
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .chat-messages {
+        padding: 10px;
+        height: 300px;
+        overflow-y: scroll; /* Mantener la barra de desplazamiento solo en esta área */
+    }
+    .chat-message {
+        padding: 5px 0;
+    }
+    .chat-message-user {
+        font-weight: bold;
+    }
+    .chat-footer {
+        display: flex;
+        align-items: center;
+    }
+    #chat-input {
+        flex: 1;
+        margin-right: 10px;
+    }
+    #chat-form button {
+        flex-shrink: 0;
+    }
+</style>
+
+<div class="mt-3 mx-auto" style="max-width: 250px;">
+    <div class="card-body text-center">
+        <!-- Button to trigger the modal -->
+        <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#task-modal">
+            <i class="fas fa-plus-circle"></i> Agregar Tarea
+        </button>
+    </div>
+</div>
+
+<div class="container mt-3">
+    <!-- Tareas -->
+    <div class="row row-cols-1 row-cols-md-3 g-3 mt-3">
+        {% for task in tasks %}
+        <div class="col">
+            <div class="card h-100">
+                <div class="card-header">
+                    {{ task.title }}
+                </div>
+                <div class="card-body">
+                    {{ task.description }}
+                </div>
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-12 mb-2">
+                            <small class="text-muted">Fecha: {{ task.date_task }}</small>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted">Asignada a: {{ task.assigned_user_email }}</small>
+                                </div>
+                                <div>
+                                    <form class="status-form" data-task-id="{{ task.id }}">
+                                        <select name="status" class="form-select form-select-sm ms-2">
+                                            <option value="Pendiente" {% if task.status=='Pendiente' %}selected{% endif
+                                                %}>Pendiente</option>
+                                            <option value="Realizado" {% if task.status=='Realizado' %}selected{% endif
+                                                %}>Realizado</option>
+                                            <option value="Pospuesto" {% if task.status=='Pospuesto' %}selected{% endif
+                                                %}>Pospuesto</option>
+                                        </select>
+                                    </form>
+                                    <div class="btn-group ms-2" role="group">
+                                        <a href="{{ url_for('edit_group_task', task_id=task.id, group_id=group.0) }}"
+                                            class="btn btn-outline-primary btn-sm">Editar</a>
+                                        <form action="/delete-group-task" method="POST" class="d-inline">
+                                            <input type="hidden" value="{{ task.id }}" name="id">
+                                            <input type="hidden" value="{{ group.0 }}" name="group_id">
+                                            <button type="submit"
+                                                class="btn btn-outline-danger btn-sm">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal de tareas -->
+<div class="modal fade" id="task-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Nueva tarea</h1>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form action="/group-tasks/{{ group.0 }}" method="post">
+                    <label>Título</label>
+                    <input type="text" class="form-control mb-3" name="title">
+                    <label>Descripción</label>
+                    <textarea class="form-control mb-3" rows="5" name="description"></textarea>
+
+                    <label>Asignar a Usuario</label>
+                    <select class="form-control" name="assigned_user_email" required>
+                        {% for member_email in group[2].split(',') %}
+                        <option value="{{ member_email }}">{{ member_email }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <button type="submit" class="btn btn-primary">Agregar Tarea</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chat emergente -->
+<div class="chat-box" id="chat-box">
+    <div class="chat-header" onclick="toggleChat()">Chat del Grupo</div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-footer">
+        <form id="chat-form" onsubmit="sendMessage(event)" class="d-flex align-items-center">
+            <input type="text" id="chat-input" class="form-control me-2" placeholder="Escribe tu mensaje..." required>
+            <input type="hidden" id="chat-group-id" value="{{ group.0 }}">
+            <button type="submit" class="btn btn-primary">Enviar</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadChatMessages();
+        startPolling();
+
+        const statusForms = document.querySelectorAll('.status-form');
+        statusForms.forEach(form => {
+            form.addEventListener('change', function () {
+                const taskId = this.dataset.taskId;
+                const status = this.querySelector('select[name="status"]').value;
+                const formData = new FormData();
+                formData.append('status', status);
+
+                fetch(`/update-group-task-status/${taskId}`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Estado actualizado exitosamente');
+                    } else {
+                        console.error('Error al actualizar el estado');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar el estado:', error);
+                });
+            });
+        });
+    });
+
+    function toggleChat() {
+        const chatBox = document.getElementById('chat-box');
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages.style.display === 'none') {
+            chatMessages.style.display = 'block';
+        } else {
+            chatMessages.style.display = 'none';
+        }
+    }
+
+    function loadChatMessages() {
+        const groupId = document.getElementById('chat-group-id').value;
+        fetch(`/get-group-chat/${groupId}`)
+        .then(response => response.json())
+        .then(messages => {
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML = '';
+            messages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('chat-message');
+                messageDiv.innerHTML = `<span class="chat-message-user">${message.user_email}:</span> ${message.message}`;
+                chatMessages.appendChild(messageDiv);
+            });
+            scrollToBottom(chatMessages);
+        });
+    }
+
+    function sendMessage(event) {
+        event.preventDefault();
+        const groupId = document.getElementById('chat-group-id').value;
+        const chatInput = document.getElementById('chat-input');
+        const message = chatInput.value;
+
+        const formData = new FormData();
+        formData.append('group_id', groupId);
+        formData.append('message', message);
+
+        fetch('/send-group-chat', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'Message sent') {
+                chatInput.value = '';
+                loadChatMessages();
+            } else {
+                console.error('Error al enviar el mensaje');
+            }
+        });
+    }
+
+    function startPolling() {
+        const groupId = document.getElementById('chat-group-id').value;
+        (function poll() {
+            fetch(`/get-group-chat/${groupId}`)
+                .then(response => response.json())
+                .then(messages => {
+                    const chatMessages = document.getElementById('chat-messages');
+                    chatMessages.innerHTML = '';
+                    messages.forEach(message => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.classList.add('chat-message');
+                        messageDiv.innerHTML = `<span class="chat-message-user">${message.user_email}:</span> ${message.message}`;
+                        chatMessages.appendChild(messageDiv);
+                    });
+                    scrollToBottom(chatMessages);
+                    setTimeout(poll, 5000); // Espera 5 segundos antes de hacer la siguiente solicitud
+                })
+                .catch(error => {
+                    console.error('Error al obtener mensajes del chat:', error);
+                    setTimeout(poll, 5000); // Reintentar después de 5 segundos en caso de error
+                });
+        })();
+    }
+
+    function scrollToBottom(element) {
+        element.scrollTop = element.scrollHeight;
+    }
+</script>
+
+
+
+{% endblock %}

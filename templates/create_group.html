@@ -1,0 +1,32 @@
+{% extends 'slidebar.html' %}
+
+{% block content %}
+<main class="d-flex">
+    <div class="container-fluid row m-0 vh-100 justify-content-center align-items-center">
+        <div class="card shadow w-50">
+            <div class="card-body">
+
+                <!-- Formulario de creación de grupo -->
+
+                <form action="/create-group" method="post">
+                    <h3 class="text-center">APLICACIÓN DE TAREAS</h3>
+                    <h5 class="text-center">Crear Grupo</h5>
+
+                    <label>Nombre del Grupo</label>
+                    <input type="text" class="form-control mb-3" name="group_name">
+
+                    <label>Emails de los Integrantes del Grupo (separados por comas y un espacio)</label>
+                    <label>¡No olvides inscribirte tú mismo también!</label>
+                    <textarea class="form-control mb-3" rows="5" name="group_members"></textarea>
+
+                    <button type="submit" class="btn btn-success w-100">Crear Grupo</button>
+                </form>
+                <form action="/tasks" method="get">
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Volver a Tareas</button>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
