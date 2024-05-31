@@ -399,6 +399,7 @@ def delete_group(group_id):
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
 
     try:
+        
         # Primero, elimina todas las tareas relacionadas con el grupo
         cur.execute("DELETE FROM group_tasks WHERE group_id = %s", (group_id,))
         mysql.connection.commit()
@@ -411,10 +412,9 @@ def delete_group(group_id):
     except ProgrammingError as e:
         flash(f'Error al eliminar el grupo: {e}', 'danger')  # Muestra un mensaje de error en caso de fallo
     finally:
-        cur.close()  # Cierra el cursor
+        cur.close()  # Cierra el cursor
 
     return redirect(url_for('groups'))  # Redirige a la página de grupos
-
 
 
 # Ruta para mostrar el formulario de edición de grupo
