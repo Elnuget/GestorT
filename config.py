@@ -1,16 +1,9 @@
 #Para servidor Online
-#MYSQL_HOST = '23.145.120.75'
-#MYSQL_USER = 'gonzaloe_GestorT'
-#MYSQL_PASSWORD = 'aaa6JN^j9Vl=z1o'
-#MYSQL_DB = 'gonzaloe_GestorT'
-#HEX_SEC_KEY= 'd5fb8c4fa8bd46638dadc4e751e0d68d'
-#UPLOAD_FOLDER = 'templates/img/Profile_image/'
-
-
-#Para servidor local
-MYSQL_HOST = 'localhost'
-MYSQL_USER = 'root'
-MYSQL_PASSWORD = ''
-MYSQL_DB = 'titulacion'
+MYSQL_HOST = '23.145.120.75'
+MYSQL_USER = 'gonzaloe_GestorT'
+MYSQL_PASSWORD = 'aaa6JN^j9Vl=z1o'
+MYSQL_DB = 'gonzaloe_GestorT'
 HEX_SEC_KEY= 'd5fb8c4fa8bd46638dadc4e751e0d68d'
 UPLOAD_FOLDER = 'templates/img/Profile_image/'
+
+
