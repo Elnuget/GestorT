@@ -10,7 +10,7 @@ Pasos para la instalación del ambiente virtual:
 - Colocar: pip install Flask Flask-MySQL-Connector
 - Colocar: pip install Flask Flask-MySQLdb
 - Colocar: pip install flask-socketio
-
+- Colocar: pip install Flask Flask-Mail itsdangerous
 
 
 No olvidar el "Aceptar" el ambiente virtual para su uso en el proyecto.

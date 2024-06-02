@@ -16,6 +16,8 @@ from mysql.connector import connect, cursor  # Importa funciones para conectar y
 from flask import send_from_directory  # Importa la función send_from_directory para enviar archivos desde un directorio
 import uuid  # Importa uuid para generar identificadores únicos
 from flask_mysqldb import MySQL, MySQLdb
+from flask_mail import Mail, Message
+import config  # Importa configuraciones desde un archivo externo llamado config.py
 
 
 # Inicializar la aplicación Flask
