@@ -5,5 +5,7 @@ MYSQL_PASSWORD = 'aaa6JN^j9Vl=z1o'
 MYSQL_DB = 'gonzaloe_GestorT'
 HEX_SEC_KEY= 'd5fb8c4fa8bd46638dadc4e751e0d68d'
 UPLOAD_FOLDER = 'templates/img/Profile_image/'
+EMAIL_PASSWORD = 'qinl npqd ylye pgzr'
+EMAIL_ADMIN = "ricarhida@gmail.com"
 
 

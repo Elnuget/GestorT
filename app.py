@@ -18,7 +18,10 @@ import uuid  # Importa uuid para generar identificadores únicos
 from flask_mysqldb import MySQL, MySQLdb
 from flask_mail import Mail, Message
 import config  # Importa configuraciones desde un archivo externo llamado config.py
-
+import ssl
+import smtplib
+from email.message import EmailMessage
+from random import randint
 
 # Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -32,6 +35,8 @@ app.config['MYSQL_HOST'] = config.MYSQL_HOST  # Configura el host de MySQL
 app.config['MYSQL_USER'] = config.MYSQL_USER  # Configura el usuario de MySQL
 app.config['MYSQL_PASSWORD'] = config.MYSQL_PASSWORD  # Configura la contraseña de MySQL
 app.config['MYSQL_DB'] = config.MYSQL_DB  # Configura la base de datos de MySQL
+app.config['EMAIL_PASSWORD'] = config.EMAIL_PASSWORD #Configura el email que envía los correos
+app.config['EMAIL_ADMIN'] = config.EMAIL_ADMIN #Configurar el email administrador
 
 
 # Creación de una instancia de la clase MySQL para interactuar con la base de datos
@@ -77,31 +82,92 @@ def logout():
     return redirect(url_for('home'))  # Redirige a la página principal
 
 
-# Definir la ruta para el registro de usuarios
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        name = request.form['name']  # Obtiene el nombre del formulario
-        surnames = request.form['surnames']  # Obtiene los apellidos del formulario
-        email = request.form['email']  # Obtiene el correo electrónico del formulario
-        password = request.form['password']  # Obtiene la contraseña del formulario
+        name = request.form['name']
+        surnames = request.form['surnames']
+        email = request.form['email']
+        password = request.form['password']
 
         if not name or not surnames or not email or not password:
-            flash('Todos los campos son obligatorios', 'danger')  # Muestra un mensaje de error si faltan campos
-            return redirect(url_for('register'))  # Redirige a la página de registro
+            flash('Todos los campos son obligatorios', 'danger')
+            return redirect(url_for('register'))
 
         if name and surnames and email and password:
-            cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-            sql = "INSERT INTO users (name, surnames, email, password) VALUES (%s, %s, %s, %s)"  # Inserta un nuevo usuario en la base de datos
-            data = (name, surnames, email, password)  # Datos del nuevo usuario
-            cur.execute(sql, data)  # Ejecuta la consulta
-            mysql.connection.commit()  # Confirma los cambios en la base de datos
-            #notify_users({'message': 'Nueva tarea creada'})  # Notifica a los usuarios sobre la nueva tarea
+            cur = mysql.connection.cursor()
+            verification_code = randint(100000, 999999)  # Generar un código de verificación de 6 dígitos
+            sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified) VALUES (%s, %s, %s, %s, %s, %s)"
+            data = (name, surnames, email, password, verification_code, False)
+            cur.execute(sql, data)
+            mysql.connection.commit()
+            cur.close()
 
-            flash('Usuario registrado correctamente', 'success')  # Muestra un mensaje de éxito
-            return redirect(url_for('home'))  # Redirige a la página principal
+            # Enviar correo de verificación
+            subject = "Código de Verificación"
+            body = f"Hola {name},\n\nTu código de verificación es: {verification_code}"
+            send_email(subject, body, email)
 
-    return render_template('register.html')  # Renderiza el formulario de registro si el método es GET o si hay errores en el formulario
+            session['email'] = email  # Guardar email en la sesión para usar en la verificación
+
+            flash('Usuario registrado correctamente. Por favor, verifica tu correo electrónico.', 'success')
+            return redirect(url_for('verify_email'))
+
+    return render_template('register.html')
+
+#
+# FALTA: - UNA VEZ VERIFICADO, QUE PUEDA ACCEDER, CASO CONTRARIO, NO ACCEDER
+#       - HASH DE CONTRASEÑAS
+#       - VERIFICACIÓN DE CONTRASEÑA
+#
+
+@app.route('/verify_email', methods=['GET', 'POST'])
+def verify_email():
+    if request.method == 'POST':
+        verification_code = request.form['verification_code']
+
+        if 'email' in session:
+            email = session['email']
+            cur = mysql.connection.cursor()
+            cur.execute("SELECT verification_code FROM users WHERE email = %s", (email,))
+            stored_code = cur.fetchone()
+
+            if stored_code and stored_code[0] == int(verification_code):
+                cur.execute("UPDATE users SET verified = True WHERE email = %s", (email,))
+                mysql.connection.commit()
+                cur.close()
+                flash('Correo verificado correctamente', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Código de verificación incorrecto', 'danger')
+                cur.close()
+        else:
+            flash('No se ha encontrado un email en la sesión. Por favor, regístrate o inicia sesión nuevamente.', 'danger')
+            return redirect(url_for('register'))
+
+    return render_template('verify_email.html')
+
+# Función para enviar correos electrónicos
+def send_email(subject, body, to_email):
+    email_sender = config.EMAIL_ADMIN
+    password = config.EMAIL_PASSWORD
+
+    em = EmailMessage()
+    em["From"] = email_sender
+    em["To"] = to_email
+    em["Subject"] = subject
+    em.set_content(body)
+
+    context = ssl.create_default_context()
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
+            smtp.login(email_sender, password)
+            smtp.sendmail(email_sender, to_email, em.as_string())
+        print("Correo enviado exitosamente")
+    except Exception as e:
+        print(f"Error al enviar el correo: {e}")
+
 
 ##########################################################
 #RUTAS PARA LA OBTENCIÓN DE TAREAS DE FORMA INDIVIDUAL
