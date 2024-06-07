@@ -52,7 +52,18 @@ def home():
     if 'email' not in session:  # Verifica si el usuario no ha iniciado sesión
         flash('Debes iniciar sesión primero', 'danger')  # Muestra un mensaje de error
         return render_template('index.html')  # Redirige a la página de inicio de sesión
-    return render_template('home.html', title='Inicio | Task Manager')  # Muestra la página principal
+    email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
+    cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
+    cur.execute("SELECT * FROM tasks WHERE email = %s", [email])  # Selecciona las tareas del usuario
+    tasks = cur.fetchall()  # Recupera todas las tareas del usuario
+    
+    # Procesamiento de los resultados de la consulta para facilitar su uso en la plantilla
+    insertObject = []
+    columnNames = [column[0] for column in cur.description]  # Obtiene los nombres de las columnas de la consulta
+    for record in tasks:
+        insertObject.append(dict(zip(columnNames, record)))  # Convierte cada fila de resultados en un diccionario
+    cur.close()  # Cierra el cursor    
+    return render_template('home.html', tasks=insertObject, title='Inicio | Task Manager')  # Muestra la página principal
 
 
 # Ruta para el inicio de sesión
