@@ -47,7 +47,7 @@
     }
 </style>
 
-<body class="hold-transition sidebar-mini layout-fixed">
+<body class="hold-transition sidebar-mini layout-fixed sidebar-collapse">
     <div class="wrapper">
 
         <!-- Preloader -->
@@ -207,23 +207,23 @@
                                 <p>Mis Grupos</p>
                                 <i class="fas fa-angle-left right"></i>
                             </a>
+                            
                             <ul class="nav nav-treeview" style="display: none;" id="group-list">
                                 {% for group in user_groupsg %}
                                 <li class="nav-item d-flex justify-content-between align-items-center">
-                                    <a href="{{ url_for('group_tasks', group_id=group.id) }}" class="nav-link">
+                                    <a href="{{ url_for('group_tasks', group_id=group.id) }}" class="nav-link d-flex align-items-center">
                                         <i class="far fa-circle nav-icon"></i>
-                                        <p>{{ group.group_name }}</p>
-                                        <form action="{{ url_for('leave_group', group_id=group.id) }}" method="post"
-                                            class="d-inline">
-                                            <button type="submit" class="btn btn-link p-0"
-                                                onclick="return confirm('¿Estás seguro de que deseas abandonar este grupo?');">
-                                                <i class="fas fa-sign-out-alt text-danger"></i>
-                                            </button>
-                                        </form>
+                                        <p class="mb-0 ml-2">{{ group.group_name }}</p>
                                     </a>
-
+                                    <form action="{{ url_for('leave_group', group_id=group.id) }}" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-link p-0 ml-n3"
+                                            onclick="return confirm('¿Estás seguro de que deseas abandonar este grupo?');">
+                                            <i class="fas fa-sign-out-alt text-danger"></i>
+                                        </button>
+                                    </form>
                                 </li>
                                 {% endfor %}
+
 
                             </ul>
                         </li>
@@ -270,10 +270,10 @@
             </section>
         </div>
         <footer class="main-footer">
-            <strong>Copyright &copy; 2014-2021 <a href="https://adminlte.io">AdminLTE.io</a>.</strong>
+            <strong>GestorT</strong>
             All rights reserved.
             <div class="float-right d-none d-sm-inline-block">
-                <b>Version</b> 3.2.0
+                <b>Version</b> 1.0
             </div>
         </footer>
 
