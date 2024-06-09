@@ -18,10 +18,12 @@ import uuid  # Importa uuid para generar identificadores únicos
 from flask_mysqldb import MySQL, MySQLdb
 from flask_mail import Mail, Message
 import config  # Importa configuraciones desde un archivo externo llamado config.py
+#A partir de aquí es la importación de librerías para el servdor SMTPmediante el correo electrónico
 import ssl
 import smtplib
 from email.message import EmailMessage
 from random import randint
+from datetime import timedelta
 
 # Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -35,7 +37,7 @@ app.config['MYSQL_HOST'] = config.MYSQL_HOST  # Configura el host de MySQL
 app.config['MYSQL_USER'] = config.MYSQL_USER  # Configura el usuario de MySQL
 app.config['MYSQL_PASSWORD'] = config.MYSQL_PASSWORD  # Configura la contraseña de MySQL
 app.config['MYSQL_DB'] = config.MYSQL_DB  # Configura la base de datos de MySQL
-app.config['EMAIL_PASSWORD'] = config.EMAIL_PASSWORD #Configura el email que envía los correos
+app.config['EMAIL_PASSWORD'] = config.EMAIL_PASSWORD #Configura la contraseña del email que envía los correos
 app.config['EMAIL_ADMIN'] = config.EMAIL_ADMIN #Configurar el email administrador
 
 
@@ -78,12 +80,18 @@ def login():
     cur.close()  # Cierra el cursor
 
     if user is not None:
-        session['email'] = email  # Almacena el correo electrónico en la sesión
-        session['name'] = user[1]  # Almacena el nombre en la sesión
-        session['surnames'] = user[2]  # Almacena los apellidos en la sesión
-        return redirect(url_for('tasks'))  # Redirige a la página de tareas
+        # Verificar si el usuario ha verificado su correo
+        if user[7]:  # La columna 'verified' es la séptima columna (índice 7)
+            session['email'] = email  # Almacena el correo electrónico en la sesión
+            session['name'] = user[1]  # Almacena el nombre en la sesión
+            session['surnames'] = user[2]  # Almacena los apellidos en la sesión
+            return redirect(url_for('tasks'))  # Redirige a la página de tareas
+        else:
+            flash('Tu correo electrónico no ha sido verificado. Por favor, verifica tu correo antes de iniciar sesión.', 'warning')
+            return redirect(url_for('verify_email'))  # Redirige a la página de verificación de correo
     else:
-        return render_template('index.html', message="Las credenciales no son correctas")  # Muestra un mensaje de error
+        flash('Las credenciales no son correctas', 'danger')  # Muestra un mensaje de error
+        return render_template('index.html')
 
 
 # Ruta para cerrar sesión
@@ -92,7 +100,7 @@ def logout():
     session.clear()  # Limpia todos los datos de la sesión
     return redirect(url_for('home'))  # Redirige a la página principal
 
-
+# Ruta para regitrar un usuario
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -127,9 +135,10 @@ def register():
     return render_template('register.html')
 
 #
-# FALTA: - UNA VEZ VERIFICADO, QUE PUEDA ACCEDER, CASO CONTRARIO, NO ACCEDER
+# FALTA: - 
 #       - HASH DE CONTRASEÑAS
 #       - VERIFICACIÓN DE CONTRASEÑA
+#       - 
 #
 
 @app.route('/verify_email', methods=['GET', 'POST'])
@@ -147,6 +156,12 @@ def verify_email():
                 cur.execute("UPDATE users SET verified = True WHERE email = %s", (email,))
                 mysql.connection.commit()
                 cur.close()
+
+                # Enviar correo de bienvenida
+                subject = "Bienvenido a Task Manager"
+                body = f"Hola {session['name']},\n\nTu cuenta ha sido verificada exitosamente. ¡Bienvenido a Task Manager! Disfruta de la aplicación."
+                send_email(subject, body, email)
+
                 flash('Correo verificado correctamente', 'success')
                 return redirect(url_for('home'))
             else:
@@ -163,21 +178,56 @@ def send_email(subject, body, to_email):
     email_sender = config.EMAIL_ADMIN
     password = config.EMAIL_PASSWORD
 
+    # Convertir el cuerpo del correo a UTF-8
+    body_utf8 = body.encode('utf-8')
+
     em = EmailMessage()
     em["From"] = email_sender
     em["To"] = to_email
     em["Subject"] = subject
-    em.set_content(body)
+    em.set_content(body_utf8.decode('utf-8'), subtype='plain', charset='utf-8')  # Especificacion de UTF-8 para el contenido y vitar el fallo de ASCII
 
     context = ssl.create_default_context()
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
             smtp.login(email_sender, password)
-            smtp.sendmail(email_sender, to_email, em.as_string())
+            smtp.sendmail(email_sender, to_email, em.as_bytes())  # Usar as_bytes() en lugar de as_string() para evitar errores de ASCII
         print("Correo enviado exitosamente")
     except Exception as e:
         print(f"Error al enviar el correo: {e}")
+
+
+# Ruta para volver a enviar un correo de verificación
+@app.route('/resend_verification', methods=['POST'])
+def resend_verification():
+    if 'email' in session:
+        email = session['email']
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT name FROM users WHERE email = %s", (email,))
+        user = cur.fetchone()
+        if user:
+            name = user[0]
+            verification_code = randint(100000, 999999)  # Generar un nuevo código de verificación
+            cur.execute("UPDATE users SET verification_code = %s WHERE email = %s", (verification_code, email))
+            mysql.connection.commit()
+            cur.close()
+
+            # Enviar el nuevo código de verificación por correo
+            subject = "Nuevo Código de Verificación"
+            body = f"Hola {name},\n\nTu nuevo código de verificación es: {verification_code}"
+            send_email(subject, body, email)
+
+            flash('Nuevo código de verificación reenviado. Por favor, revisa tu correo electrónico.', 'success')
+        else:
+            flash('No se ha encontrado el usuario. Por favor, regístrate o inicia sesión nuevamente.', 'danger')
+            cur.close()
+    else:
+        flash('No se ha encontrado un email en la sesión. Por favor, regístrate o inicia sesión nuevamente.', 'danger')
+        return redirect(url_for('register'))
+
+    return redirect(url_for('verify_email'))
+
 
 
 ##########################################################

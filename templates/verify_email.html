@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,7 +8,6 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
 </head>
-
 <body>
   <main class="d-flex">
     <div class="container-fluid row m-0 vh-100 justify-content-center align-items-center">
@@ -36,10 +34,36 @@
             <input type="text" class="form-control mb-3" name="verification_code" required>
             <button type="submit" class="btn btn-success w-100">Verificar</button>
           </form>
+
+          <!-- Botón para reenviar el código de verificación -->
+          <form id="resend-form" action="/resend_verification" method="post">
+            <button type="submit" id="resend-button" class="btn btn-warning w-100 mt-3" disabled>Reenviar Código de Verificación <span id="timer">60</span>s</button>
+          </form>
         </div>
       </div>
     </div>
   </main>
-</body>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const resendButton = document.getElementById("resend-button");
+      const timerSpan = document.getElementById("timer");
+      let timeLeft = 60;
+      
+      const countdown = setInterval(() => {
+        timeLeft--;
+        timerSpan.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(countdown);
+          resendButton.disabled = false;
+          resendButton.classList.remove("btn-warning");
+          resendButton.classList.add("btn-primary");
+          resendButton.textContent = "Reenviar Código de Verificación";
+        }
+      }, 1000);
+      
+      resendButton.disabled = true;
+    });
+  </script>
+</body>
 </html>
