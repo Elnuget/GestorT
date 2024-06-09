@@ -85,6 +85,30 @@ def login():
     else:
         return render_template('index.html', message="Las credenciales no son correctas")  # Muestra un mensaje de error
 
+@app.route('/api/tasks', methods=['GET'])
+def api_tasks():
+    if 'email' not in session:
+        return jsonify({'error': 'Usuario no autenticado'}), 403
+
+    email = session['email']
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT id, title, description, date_task FROM tasks WHERE email = %s", [email])
+    tasks = cur.fetchall()
+    cur.close()
+
+    tasks_list = []
+    for task in tasks:
+        task_id, title, description, date_task = task
+        tasks_list.append({
+            'id': task_id,
+            'title': title,
+            'start': date_task.isoformat(),  # Ensure the date is in ISO format
+        })
+
+    return jsonify(tasks_list)
+
+
+
 
 # Ruta para cerrar sesión
 @app.route('/logout')
