@@ -116,15 +116,13 @@ def api_tasks():
     return jsonify(tasks_list)
 
 
-
-
 # Ruta para cerrar sesión
 @app.route('/logout')
 def logout():
     session.clear()  # Limpia todos los datos de la sesión
     return redirect(url_for('home'))  # Redirige a la página principal
 
-# Ruta para regitrar un usuario
+# Ruta para registrar un usuario
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -137,32 +135,42 @@ def register():
             flash('Todos los campos son obligatorios', 'danger')
             return redirect(url_for('register'))
 
-        if name and surnames and email and password:
-            cur = mysql.connection.cursor()
-            verification_code = randint(100000, 999999)  # Generar un código de verificación de 6 dígitos
-            sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified) VALUES (%s, %s, %s, %s, %s, %s)"
-            data = (name, surnames, email, password, verification_code, False)
-            cur.execute(sql, data)
-            mysql.connection.commit()
+        cur = mysql.connection.cursor()
+        # Verificar si el correo ya está registrado
+        cur.execute("SELECT * FROM users WHERE email = %s", (email,))
+        existing_user = cur.fetchone()
+        if existing_user:
             cur.close()
+            flash('El correo electrónico ya está registrado. Por favor, usa otro correo.', 'danger')
+            return redirect(url_for('register'))
 
-            # Enviar correo de verificación
-            subject = "Código de Verificación"
-            body = f"Hola {name},\n\nTu código de verificación es: {verification_code}"
-            send_email(subject, body, email)
+        # Si el correo no está registrado, proceder con el registro
+        verification_code = randint(100000, 999999)  # Generar un código de verificación de 6 dígitos
+        sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified) VALUES (%s, %s, %s, %s, %s, %s)"
+        data = (name, surnames, email, password, verification_code, False)
+        cur.execute(sql, data)
+        mysql.connection.commit()
+        cur.close()
 
-            session['email'] = email  # Guardar email en la sesión para usar en la verificación
+        # Enviar correo de verificación
+        subject = "Código de Verificación"
+        body = f"Hola {name},\n\nTu código de verificación es: {verification_code}"
+        send_email(subject, body, email)
 
-            flash('Usuario registrado correctamente. Por favor, verifica tu correo electrónico.', 'success')
-            return redirect(url_for('verify_email'))
+        session['email'] = email  # Guardar email en la sesión para usar en la verificación
+        session['name'] = name  # Guardar el nombre en la sesión
+
+        flash('Usuario registrado correctamente. Por favor, verifica tu correo electrónico.', 'success')
+        return redirect(url_for('verify_email'))
 
     return render_template('register.html')
 
+
 #
-# FALTA: - 
+# FALTA: - Colocar un tiempo límite para ingresar el código de verificación
 #       - HASH DE CONTRASEÑAS
-#       - VERIFICACIÓN DE CONTRASEÑA
-#       - 
+#       - Después de cierto tiempo, borrar el usuario
+#       - En caso de que se haya registrado pero no haya verificado, y se vuelva a registrar, borrar el registro anterior y volver a enviar el código de verificación
 #
 
 @app.route('/verify_email', methods=['GET', 'POST'])
@@ -173,13 +181,17 @@ def verify_email():
         if 'email' in session:
             email = session['email']
             cur = mysql.connection.cursor()
-            cur.execute("SELECT verification_code FROM users WHERE email = %s", (email,))
-            stored_code = cur.fetchone()
+            cur.execute("SELECT name, verification_code FROM users WHERE email = %s", (email,))
+            user = cur.fetchone()
 
-            if stored_code and stored_code[0] == int(verification_code):
+            if user and user[1] == int(verification_code):
                 cur.execute("UPDATE users SET verified = True WHERE email = %s", (email,))
                 mysql.connection.commit()
                 cur.close()
+
+                # Guardar el nombre del usuario en la sesión si no está ya
+                if 'name' not in session:
+                    session['name'] = user[0]
 
                 # Enviar correo de bienvenida
                 subject = "Bienvenido a Task Manager"
