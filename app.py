@@ -25,7 +25,9 @@ from email.message import EmailMessage
 from random import randint
 from datetime import datetime, timedelta
 from flask_apscheduler import APScheduler
-
+from flask import Flask, request, jsonify, session
+import traceback
+from datetime import datetime
 
 # Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -947,6 +949,45 @@ def get_profile_image_url_master():
             return jsonify({'error': 'Correo electrónico no encontrado en la sesión'})  # Retorna un error JSON si no hay correo electrónico en la sesión
     except Exception as e:
         return jsonify({'error': str(e)})  # Retorna un error JSON en caso de excepción
+
+
+def convert_iso_to_mysql_datetime(iso_str):
+    return datetime.fromisoformat(iso_str.replace("Z", "+00:00")).strftime('%Y-%m-%d %H:%M:%S')
+
+
+@app.route('/api/update-task', methods=['POST'])
+def update_task():
+    if 'email' not in session:
+        return jsonify({'error': 'Usuario no autenticado'}), 403
+
+    data = request.json
+    task_id = data.get('id')
+    start = data.get('start')
+    end = data.get('end')
+
+    print(f"Datos recibidos: task_id={task_id}, start={start}, end={end}")
+
+    if not task_id or not start:
+        return jsonify({'error': 'Datos incompletos'}), 400
+
+    try:
+        # Convertir start y end al formato adecuado
+        start = convert_iso_to_mysql_datetime(start)
+        if not end:
+            end = start
+        else:
+            end = convert_iso_to_mysql_datetime(end)
+
+        print(f"Actualizando tarea con ID: {task_id}, fecha de inicio: {start}, fecha de fin: {end}")
+        cur = mysql.connection.cursor()
+        cur.execute("UPDATE tasks SET date_task = %s, date_end = %s WHERE id = %s AND email = %s", (start, end, task_id, session['email']))
+        mysql.connection.commit()
+        cur.close()
+        return jsonify({'message': 'Tarea actualizada correctamente'}), 200
+    except Exception as e:
+        print(f"Error al actualizar la tarea: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
+
 
 # Bloque principal de ejecución de la aplicación
 if __name__ == '__main__':
