@@ -23,7 +23,9 @@ import ssl
 import smtplib
 from email.message import EmailMessage
 from random import randint
-from datetime import timedelta
+from datetime import datetime, timedelta
+from flask_apscheduler import APScheduler
+
 
 # Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -146,8 +148,9 @@ def register():
 
         # Si el correo no está registrado, proceder con el registro
         verification_code = randint(100000, 999999)  # Generar un código de verificación de 6 dígitos
-        sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified) VALUES (%s, %s, %s, %s, %s, %s)"
-        data = (name, surnames, email, password, verification_code, False)
+        verification_sent_time = datetime.now()  # Obtener el tiempo actual
+        sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified, verification_sent_time) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        data = (name, surnames, email, password, verification_code, False, verification_sent_time)
         cur.execute(sql, data)
         mysql.connection.commit()
         cur.close()
@@ -171,7 +174,7 @@ def register():
 #       - HASH DE CONTRASEÑAS
 #       - Después de cierto tiempo, borrar el usuario
 #       - En caso de que se haya registrado pero no haya verificado, y se vuelva a registrar, borrar el registro anterior y volver a enviar el código de verificación
-#
+#       - Verificación de contraseñas
 
 @app.route('/verify_email', methods=['GET', 'POST'])
 def verify_email():
@@ -181,33 +184,59 @@ def verify_email():
         if 'email' in session:
             email = session['email']
             cur = mysql.connection.cursor()
-            cur.execute("SELECT name, verification_code FROM users WHERE email = %s", (email,))
+            cur.execute("SELECT name, verification_code, verification_sent_time FROM users WHERE email = %s", (email,))
             user = cur.fetchone()
 
-            if user and user[1] == int(verification_code):
-                cur.execute("UPDATE users SET verified = True WHERE email = %s", (email,))
-                mysql.connection.commit()
-                cur.close()
+            if user:
+                name, stored_code, verification_sent_time = user
+                current_time = datetime.now()
+                time_diff = current_time - verification_sent_time
 
-                # Guardar el nombre del usuario en la sesión si no está ya
-                if 'name' not in session:
-                    session['name'] = user[0]
+                if time_diff > timedelta(minutes=10):
+                    # Eliminar al usuario
+                    cur.execute("DELETE FROM users WHERE email = %s", (email,))
+                    mysql.connection.commit()
+                    cur.close()
+                    session.clear()
+                    flash('El tiempo para verificar tu correo ha expirado. Tu cuenta ha sido eliminada. Por favor, regístrate nuevamente.', 'danger')
+                    return redirect(url_for('register'))
 
-                # Enviar correo de bienvenida
-                subject = "Bienvenido a Task Manager"
-                body = f"Hola {session['name']},\n\nTu cuenta ha sido verificada exitosamente. ¡Bienvenido a Task Manager! Disfruta de la aplicación."
-                send_email(subject, body, email)
+                elif time_diff <= timedelta(minutes=5) and stored_code == int(verification_code):
+                    cur.execute("UPDATE users SET verified = True WHERE email = %s", (email,))
+                    mysql.connection.commit()
+                    cur.close()
 
-                flash('Correo verificado correctamente', 'success')
-                return redirect(url_for('home'))
+                    # Guardar el nombre del usuario en la sesión si no está ya
+                    if 'name' not in session:
+                        session['name'] = name
+
+                    # Enviar correo de bienvenida
+                    subject = "Bienvenido a Task Manager"
+                    body = f"Hola {session['name']},\n\nTu cuenta ha sido verificada exitosamente. ¡Bienvenido a Task Manager! Disfruta de la aplicación."
+                    send_email(subject, body, email)
+
+                    flash('Correo verificado correctamente', 'success')
+                    return redirect(url_for('home'))
+                else:
+                    flash('Código de verificación incorrecto o ha expirado. Por favor, intenta nuevamente.', 'danger')
+                    cur.close()
             else:
-                flash('Código de verificación incorrecto', 'danger')
-                cur.close()
-        else:
-            flash('No se ha encontrado un email en la sesión. Por favor, regístrate o inicia sesión nuevamente.', 'danger')
-            return redirect(url_for('register'))
+                flash('No se ha encontrado un email en la sesión. Por favor, regístrate o inicia sesión nuevamente.', 'danger')
+                return redirect(url_for('register'))
 
     return render_template('verify_email.html')
+
+scheduler = APScheduler()
+
+def delete_unverified_users():
+    cur = mysql.connection.cursor()
+    cur.execute("DELETE FROM users WHERE verified = False AND verification_sent_time < NOW() - INTERVAL 10 MINUTE")
+    mysql.connection.commit()
+    cur.close()
+
+scheduler.add_job(id='delete_unverified_users', func=delete_unverified_users, trigger='interval', minutes=10)
+scheduler.start()
+
 
 # Función para enviar correos electrónicos
 def send_email(subject, body, to_email):
