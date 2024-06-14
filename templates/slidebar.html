@@ -504,8 +504,7 @@
     <script>
         $(document).ready(function() {
             var calendarEl = document.getElementById('calendar');
-
-            // Fetch events from the API
+        
             $.ajax({
                 url: '/api/tasks',
                 method: 'GET',
@@ -519,9 +518,31 @@
                         themeSystem: 'bootstrap',
                         events: data,
                         editable: true,
-                        droppable: true // This allows things to be dropped onto the calendar
+                        droppable: true,
+                        eventDrop: function(info) {
+                            var event = info.event;
+                            console.log('ID de la tarea:', event.id);
+                            console.log('Fecha de inicio:', event.start.toISOString());
+                            console.log('Fecha de fin:', event.end ? event.end.toISOString() : 'N/A');
+                            $.ajax({
+                                url: '/api/update-task',
+                                method: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify({
+                                    id: event.id,
+                                    start: event.start.toISOString(),
+                                    end: event.end ? event.end.toISOString() : null
+                                }),
+                                success: function(response) {
+                                    console.log('Evento actualizado');
+                                },
+                                error: function(jqXHR, textStatus, errorThrown) {
+                                    console.error('Error al actualizar el evento: ' + textStatus + ' - ' + errorThrown);
+                                }
+                            });
+                        }
                     });
-
+        
                     calendar.render();
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
@@ -529,7 +550,8 @@
                 }
             });
         });
-    </script>
+        </script>
+        
 </body>
 
 </html>
