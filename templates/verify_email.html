@@ -31,7 +31,7 @@
             <h3 class="text-center">Verificación de Correo</h3>
             <h5 class="text-center">Ingresa el código de verificación que se te ha enviado</h5>
             <label>Código de Verificación</label>
-            <input type="text" class="form-control mb-3" name="verification_code" required>
+            <input type="text" class="form-control mb-3" name="verification_code" required inputmode="numeric" pattern="\d*">
             <button type="submit" class="btn btn-success w-100">Verificar</button>
           </form>
 
@@ -63,6 +63,11 @@
       }, 1000);
       
       resendButton.disabled = true;
+    });
+
+    // Validar solo números en el campo de verificación en tiempo real
+    document.querySelector('input[name="verification_code"]').addEventListener('input', function (e) {
+      this.value = this.value.replace(/\D/g, '');
     });
   </script>
 </body>
