@@ -60,7 +60,7 @@ def home():
         return render_template('index.html')  # Redirige a la página de inicio de sesión
     email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-    cur.execute("SELECT * FROM tasks WHERE email = %s", [email])  # Selecciona las tareas del usuario
+    cur.execute("SELECT * FROM tasks WHERE email = %s ORDER BY date_task DESC", [email])  # Selecciona las tareas del usuario
     tasks = cur.fetchall()  # Recupera todas las tareas del usuario
     
     # Procesamiento de los resultados de la consulta para facilitar su uso en la plantilla
@@ -104,20 +104,24 @@ def api_tasks():
 
     email = session['email']
     cur = mysql.connection.cursor()
-    cur.execute("SELECT id, title, description, date_task FROM tasks WHERE email = %s", [email])
+    cur.execute("SELECT id, title, description, date_task, date_end FROM tasks WHERE email = %s", [email])
     tasks = cur.fetchall()
     cur.close()
 
     tasks_list = []
     for task in tasks:
-        task_id, title, description, date_task = task
+        task_id, title, description, date_task, date_end = task
         tasks_list.append({
             'id': task_id,
             'title': title,
             'start': date_task.isoformat(),  # Ensure the date is in ISO format
+            'end': date_end.isoformat() if date_end else None  # Ensure the date is in ISO format
         })
 
     return jsonify(tasks_list)
+
+
+
 
 
 # Ruta para cerrar sesión
@@ -310,7 +314,7 @@ def tasks():
 
     email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-    cur.execute("SELECT * FROM tasks WHERE email = %s", [email])  # Selecciona las tareas del usuario
+    cur.execute("SELECT * FROM tasks WHERE email = %s ORDER BY date_task DESC", [email])  # Selecciona las tareas del usuario en orden descendente por fecha
     tasks = cur.fetchall()  # Recupera todas las tareas del usuario
     
     # Procesamiento de los resultados de la consulta para facilitar su uso en la plantilla
@@ -320,8 +324,13 @@ def tasks():
         insertObject.append(dict(zip(columnNames, record)))  # Convierte cada fila de resultados en un diccionario
     cur.close()  # Cierra el cursor
     title = 'Tareas | Task Manager'
-    return render_template('tasks.html', tasks=insertObject, title=title)  # Renderiza la plantilla de tareas con los datos obtenidos
+    return render_template('tasks.html', tasks=insertObject, title=title, datetime=datetime)  # Renderiza la plantilla de tareas con los datos obtenidos
 
+
+
+@app.context_processor
+def inject_now():
+    return {'datetime': datetime}
 
 # Ruta para agregar una nueva tarea
 @app.route('/new-task', methods=['POST'])
@@ -333,21 +342,22 @@ def newTask():
     # Obtención de datos del formulario de nueva tarea
     title = request.form['title']
     description = request.form['description']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
     email = session['email']
-    d = datetime.now()
-    dateTask = d.strftime("%Y-%m-%d")
     
     # Verificación de la existencia de datos y almacenamiento en la base de datos
-    if title and description and email:
+    if title and description and start_date and end_date:
         cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-        sql = "INSERT INTO tasks (email, title, description, date_task) VALUES (%s, %s, %s, %s)"  # Consulta SQL para insertar una nueva tarea
-        data = (email, title, description, dateTask)
+        sql = "INSERT INTO tasks (email, title, description, date_task, date_end) VALUES (%s, %s, %s, %s, %s)"  # Consulta SQL para insertar una nueva tarea
+        data = (email, title, description, start_date, end_date)
         cur.execute(sql, data)  # Ejecuta la consulta con los datos proporcionados
         mysql.connection.commit()  # Confirma los cambios en la base de datos
         cur.close()  # Cierra el cursor
 
-        # notify_users({'message': 'Nueva tarea creada'})  # Notificar a los usuarios (comentado)
     return redirect(url_for('tasks'))  # Redirige a la página de tareas
+
+
 
 
 # Ruta para agregar o actualizar el estado de una tarea
@@ -410,35 +420,30 @@ def get_tasks_data():
 
 
 # Ruta para modificar una tarea de un usuario individual
-@app.route('/edit-task/<int:task_id>', methods=['GET', 'POST'])
-def edit_task(task_id):
+@app.route('/edit-task', methods=['POST'])
+def edit_task():
     if 'email' not in session:  # Verifica si el usuario no ha iniciado sesión
         flash('Debes iniciar sesión primero', 'danger')  # Muestra un mensaje de error
-        return render_template('index.html')  # Redirige a la página de inicio de sesión
+        return redirect(url_for('index'))  # Redirige a la página de inicio de sesión
 
-    # Obtén la tarea desde la base de datos usando task_id
+    # Obtén los datos del formulario
+    task_id = request.form['id']
+    new_title = request.form['title']
+    new_description = request.form['description']
+    start_date = request.form['start_date']
+    end_date = request.form['end_date']
+
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-    cur.execute("SELECT * FROM tasks WHERE id = %s", [task_id])  # Consulta para obtener la tarea
-    task = cur.fetchone()  # Obtiene el resultado de la consulta
+    cur.execute("""
+        UPDATE tasks 
+        SET title = %s, description = %s, date_task = %s, date_end = %s 
+        WHERE id = %s AND email = %s
+    """, (new_title, new_description, start_date, end_date, task_id, session['email']))
+    mysql.connection.commit()  # Confirma los cambios en la base de datos
     cur.close()  # Cierra el cursor
-    title = 'Editar Tarea | Task Manager'  # Título de la página
 
-    if request.method == 'POST':  # Verifica si la solicitud es POST
-        # Si el formulario se envió, actualiza los datos de la tarea en la base de datos
-        new_title = request.form['title']  # Obtiene el nuevo título de la tarea del formulario
-        new_description = request.form['description']  # Obtiene la nueva descripción de la tarea del formulario
-
-        cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-        cur.execute("UPDATE tasks SET title = %s, description = %s WHERE id = %s", (new_title, new_description, task_id))  # Consulta para actualizar la tarea
-        mysql.connection.commit()  # Confirma los cambios en la base de datos
-        # notify_users({'message': 'Nueva tarea creada'})  # Notificar a los usuarios (comentado)
-        cur.close()  # Cierra el cursor
-
-        flash('Tarea actualizada correctamente', 'success')  # Muestra un mensaje de éxito
-        return redirect(url_for('tasks'))  # Redirige a la página de tareas
-
-    # Renderiza la página de edición con los detalles de la tarea
-    return render_template('edit_task.html', task=task, title=title)  # Renderiza la plantilla con los datos obtenidos
+    flash('Tarea actualizada correctamente', 'success')  # Muestra un mensaje de éxito
+    return redirect(url_for('tasks'))  # Redirige a la página de tareas
 
 
 ###################################################
