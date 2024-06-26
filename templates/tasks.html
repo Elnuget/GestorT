@@ -2,140 +2,201 @@
 
 {% block content %}
 
-<div class="mt-3 mx-auto" style="max-width: 250px;">
-    <div class="card-body text-center">
-        <!-- Button to trigger the modal -->
-        <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#modaltask">
-            <i class="fas fa-plus-circle"></i> Agregar Tarea
-        </button>
-    </div>
-</div>
-
-
-<!-- Tareas -->
-<div class="row row-cols-1 row-cols-md-3 g-4 mt-3">
-    {% for task in tasks %}
-    <div class="col">
-        <div class="card h-100">
-            <div class="card-header">
-                {{ task.title }}
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Calendar</h1>
             </div>
-            <div class="card-body">
-                <p class="card-text">{{ task.description }}</p>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active">Calendar</li>
+                </ol>
             </div>
-            <!-- Dentro del bucle for que muestra las tareas -->
-            <div class="card-footer">
-                <small class="text-muted">{{ task.date_task }}</small>
-                <div class="d-flex justify-content-between mt-2">
-                    <a href="{{ url_for('edit_task', task_id=task.id) }}"
-                        class="btn btn-outline-primary btn-sm">Edit</a>
-                    <form action="{{ url_for('deleteTask') }}" method="POST">
-                        <input type="hidden" value="{{ task.id }}" name="id">
-                        <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
-                    </form>
-                    <!-- Combo box de estado -->
-                    <form id="status-form-{{ task.id }}" class="status-form" data-task-id="{{ task.id }}">
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="Pendiente" {% if task.status=='Pendiente' %} selected {% endif %}>Pendiente
-                            </option>
-                            <option value="Pospuesto" {% if task.status=='Pospuesto' %} selected {% endif %}>Pospuesto
-                            </option>
-                            <option value="Terminado" {% if task.status=='Terminado' %} selected {% endif %}>Terminado
-                            </option>
-                        </select>
+        </div>
+    </div><!-- /.container-fluid -->
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+    <!-- Modal para editar tarea -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">Editar Tarea</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTaskForm" action="/edit-task" method="post">
+                        <input type="hidden" id="editTaskId" name="id">
+                        <div class="form-group">
+                            <label for="editTitle">Título</label>
+                            <input type="text" class="form-control" id="editTitle" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDescription">Descripción</label>
+                            <textarea class="form-control" rows="5" id="editDescription" name="description"
+                                required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editStartDate">Fecha de Inicio</label>
+                            <input type="datetime-local" class="form-control" id="editStartDate" name="start_date"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEndDate">Fecha de Fin</label>
+                            <input type="datetime-local" class="form-control" id="editEndDate" name="end_date" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-    {% endfor %}
-</div>
 
-<!-- Modal de tareas -->
-<div class="modal fade" id="modaltask" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Nueva tarea</h1>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-            </div>
-            <div class="modal-body">
-                <form action="/new-task" method="post">
-                    <label>Título</label>
-                    <input type="text" class="form-control mb-3" name="title">
-                    <label>Descripción</label>
-                    <textarea class="form-control mb-3" rows="5" name="description"></textarea>
-                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+    <script src="{{ url_for('static', filename='custom.js') }}"></script>
 
-<!-- Modal del usuario -->
-<div class="modal fade" id="user-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalLabel">Nuevo usuario</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form action="/new-user" method="post">
-                    <div class="row">
-                        <div class="col-6">
-                            <label>Nombre</label>
-                            <input type="text" class="form-control mb-3" name="name">
-                        </div>
-                        <div class="col-6">
-                            <label>Apellidos</label>
-                            <input type="text" class="form-control mb-3" name="surnames">
-                        </div>
-                    </div>
-                    <label>Email</label>
-                    <input type="email" class="form-control mb-3" name="email">
-                    <label>Contraseña</label>
-                    <input type="password" class="form-control mb-3" name="password">
-                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusForms = document.querySelectorAll('.status-form');
 
-<script src="{{ url_for('static', filename='custom.js') }}"></script>
+            statusForms.forEach(form => {
+                form.addEventListener('change', function () {
+                    const taskId = this.dataset.taskId;
+                    const status = this.querySelector('select[name="status"]').value;
+                    const formData = new FormData();
+                    formData.append('status', status);
 
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const statusForms = document.querySelectorAll('.status-form');
-
-        statusForms.forEach(form => {
-            form.addEventListener('change', function () {
-                const taskId = this.dataset.taskId;
-                const status = this.querySelector('select[name="status"]').value;
-                const formData = new FormData();
-                formData.append('status', status);
-
-                fetch(`/update-task-status/${taskId}`, {
-                    method: 'POST',
-                    body: formData
-                })
-
-                    .then(response => {
-                        if (response.ok) {
-                            console.log('Estado actualizado exitosamente');
-                        } else {
-                            console.error('Error al actualizar el estado');
-                        }
+                    fetch(`/update-task-status/${taskId}`, {
+                        method: 'POST',
+                        body: formData
                     })
-                    .catch(error => {
-                        console.error('Error al actualizar el estado:', error);
-                    });
+                        .then(response => {
+                            if (response.ok) {
+                                console.log('Estado actualizado exitosamente');
+                            } else {
+                                console.error('Error al actualizar el estado');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al actualizar el estado:', error);
+                        });
+                });
             });
         });
-    });
-</script>
+    </script>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sticky-top mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Añadir tarea</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <form action="/new-task" method="post">
+                                    <label>Título</label>
+                                    <input type="text" class="form-control mb-3" name="title" required>
 
+                                    <label>Descripción</label>
+                                    <textarea class="form-control mb-3" rows="5" name="description" required></textarea>
+
+                                    <label>Fecha de Inicio</label>
+                                    <input type="datetime-local" class="form-control mb-3" name="start_date"
+                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+
+                                    <label>Fecha de Fin</label>
+                                    <input type="datetime-local" class="form-control mb-3" name="end_date"
+                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+
+                                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.col -->
+            <div class="col-md-9">
+                <div class="card card-primary">
+                    <div class="card-body p-0">
+                        <!-- THE CALENDAR -->
+                        <div id="calendar"></div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h4 class="card-title">Tareas Pendientes</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Tareas -->
+                        <div class="row row-cols-1 row-cols-md-3 g-4 mt-3">
+                            {% for task in tasks %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        {{ task.title }}
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="card-text">{{ task.description }}</p>
+                                    </div>
+                                    <!-- Dentro del bucle for que muestra las tareas -->
+                                    <div class="card-footer">
+                                        <small class="text-muted">{{ task.date_task }}</small>
+                                        <div class="d-flex justify-content-between mt-2">
+                                            <a href="{{ url_for('edit_task', task_id=task.id) }}"
+                                                class="btn btn-outline-primary btn-sm">Edit</a>
+                                            <form action="{{ url_for('deleteTask') }}" method="POST">
+                                                <input type="hidden" value="{{ task.id }}" name="id">
+                                                <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm">Delete</button>
+                                            </form>
+                                            <!-- Combo box de estado -->
+                                            <form id="status-form-{{ task.id }}" class="status-form"
+                                                data-task-id="{{ task.id }}">
+                                                <select name="status" class="form-select form-select-sm">
+                                                    <option value="Pendiente" {% if task.status=='Pendiente' %} selected
+                                                        {% endif %}>Pendiente
+                                                    </option>
+                                                    <option value="Pospuesto" {% if task.status=='Pospuesto' %} selected
+                                                        {% endif %}>Pospuesto
+                                                    </option>
+                                                    <option value="Terminado" {% if task.status=='Terminado' %} selected
+                                                        {% endif %}>Terminado
+                                                    </option>
+                                                </select>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+    </div><!-- /.container-fluid -->
+</section>
+<!-- /.content -->
+<script>
+    function loadTaskData(id, title, description, date_task, date_end) {
+        document.getElementById('editTaskId').value = id;
+        document.getElementById('editTitle').value = title;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('editStartDate').value = date_task.replace(' ', 'T');
+        document.getElementById('editEndDate').value = date_end.replace(' ', 'T');
+    }
+</script>
 {% endblock %}

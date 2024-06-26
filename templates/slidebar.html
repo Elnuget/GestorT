@@ -526,27 +526,19 @@
                         events: data,
                         editable: true,
                         droppable: true,
-                        eventDrop: function (info) {
-                            var event = info.event;
-                            console.log('ID de la tarea:', event.id);
-                            console.log('Fecha de inicio:', event.start.toISOString());
-                            console.log('Fecha de fin:', event.end ? event.end.toISOString() : 'N/A');
-                            $.ajax({
-                                url: '/api/update-task',
-                                method: 'POST',
-                                contentType: 'application/json',
-                                data: JSON.stringify({
-                                    id: event.id,
-                                    start: event.start.toISOString(),
-                                    end: event.end ? event.end.toISOString() : null
-                                }),
-                                success: function (response) {
-                                    console.log('Evento actualizado');
-                                },
-                                error: function (jqXHR, textStatus, errorThrown) {
-                                    console.error('Error al actualizar el evento: ' + textStatus + ' - ' + errorThrown);
-                                }
-                            });
+                        eventClick: function (info) {
+                            // Obtener los datos del evento
+                            var taskId = info.event.id;
+                            var taskTitle = info.event.title;
+                            var taskDescription = info.event.extendedProps.description;
+                            var taskStartDate = info.event.start.toISOString().slice(0, 16);
+                            var taskEndDate = info.event.end ? info.event.end.toISOString().slice(0, 16) : '';
+
+                            // Llenar el formulario de edición con los datos del evento
+                            loadTaskData(taskId, taskTitle, taskDescription, taskStartDate, taskEndDate);
+
+                            // Mostrar el modal de edición
+                            $('#editTaskModal').modal('show');
                         }
                     });
 
@@ -558,7 +550,15 @@
             });
         });
 
+        function loadTaskData(id, title, description, date_task, date_end) {
+            document.getElementById('editTaskId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editDescription').value = description;
+            document.getElementById('editStartDate').value = date_task.replace(' ', 'T');
+            document.getElementById('editEndDate').value = date_end.replace(' ', 'T');
+        }
     </script>
+
     <!-- jQuery -->
     <script src="../../plugins/jquery/jquery.min.js"></script>
     <!-- Bootstrap 4 -->
