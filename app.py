@@ -235,10 +235,11 @@ def verify_email():
 scheduler = APScheduler()
 
 def delete_unverified_users():
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM users WHERE verified = False AND verification_sent_time < NOW() - INTERVAL 10 MINUTE")
-    mysql.connection.commit()
-    cur.close()
+    with app.app_context():
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM users WHERE verified = False AND verification_sent_time < NOW() - INTERVAL 10 MINUTE")
+        mysql.connection.commit()
+        cur.close()
 
 scheduler.add_job(id='delete_unverified_users', func=delete_unverified_users, trigger='interval', minutes=10)
 scheduler.start()
@@ -279,8 +280,9 @@ def resend_verification():
         user = cur.fetchone()
         if user:
             name = user[0]
-            verification_code = randint(100000, 999999)  # Generar un nuevo código de verificación
-            cur.execute("UPDATE users SET verification_code = %s WHERE email = %s", (verification_code, email))
+            verification_code = randint(100000, 999999) # Generar un nuevo código de verificación
+            verification_sent_time = datetime.now()
+            cur.execute("UPDATE users SET verification_code = %s, verification_sent_time = %s WHERE email = %s", (verification_code, verification_sent_time, email))
             mysql.connection.commit()
             cur.close()
 
