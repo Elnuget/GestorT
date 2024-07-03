@@ -6,6 +6,7 @@
     .custom-margin-bottom {
         margin-bottom: 40px;
     }
+
     .chat-box {
         position: fixed;
         bottom: 20px;
@@ -14,50 +15,263 @@
         max-height: 400px;
         background: white;
         border: 1px solid #ccc;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        overflow: hidden; /* Eliminar la barra de desplazamiento del chat-box */
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        /* Eliminar la barra de desplazamiento del chat-box */
     }
-    .chat-header, .chat-footer {
+
+    .chat-header,
+    .chat-footer {
         padding: 10px;
         background: #007bff;
         color: white;
     }
+
     .chat-header {
         font-weight: bold;
         cursor: pointer;
     }
+
     .chat-messages {
         padding: 10px;
         height: 300px;
-        overflow-y: scroll; /* Mantener la barra de desplazamiento solo en esta área */
+        overflow-y: scroll;
+        /* Mantener la barra de desplazamiento solo en esta área */
     }
+
     .chat-message {
         padding: 5px 0;
     }
+
     .chat-message-user {
         font-weight: bold;
     }
+
     .chat-footer {
         display: flex;
         align-items: center;
     }
+
     #chat-input {
         flex: 1;
         margin-right: 10px;
     }
+
     #chat-form button {
         flex-shrink: 0;
     }
 </style>
 
-<div class="mt-3 mx-auto" style="max-width: 250px;">
-    <div class="card-body text-center">
-        <!-- Button to trigger the modal -->
-        <button type="button" class="btn btn-primary mb-2" data-toggle="modal" data-target="#task-modal">
-            <i class="fas fa-plus-circle"></i> Agregar Tarea
-        </button>
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Calendar</h1>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item active">Gruup Tasks</li>
+                </ol>
+            </div>
+        </div>
+    </div><!-- /.container-fluid -->
+</section>
+
+<!-- Main content -->
+<section class="content">
+
+    <!-- Modal para editar tarea -->
+    <div class="modal fade" id="editTaskModal" tabindex="-1" aria-labelledby="editTaskModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editTaskModalLabel">Editar Tarea</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTaskForm" action="/edit-task" method="post">
+                        <input type="hidden" id="editTaskId" name="id">
+                        <div class="form-group">
+                            <label for="editTitle">Título</label>
+                            <input type="text" class="form-control" id="editTitle" name="title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDescription">Descripción</label>
+                            <textarea class="form-control" rows="5" id="editDescription" name="description"
+                                required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="editStartDate">Fecha de Inicio</label>
+                            <input type="datetime-local" class="form-control" id="editStartDate" name="start_date"
+                                required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editEndDate">Fecha de Fin</label>
+                            <input type="datetime-local" class="form-control" id="editEndDate" name="end_date" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+
+    <script src="{{ url_for('static', filename='custom.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const statusForms = document.querySelectorAll('.status-form');
+
+            statusForms.forEach(form => {
+                form.addEventListener('change', function () {
+                    const taskId = this.dataset.taskId;
+                    const status = this.querySelector('select[name="status"]').value;
+                    const formData = new FormData();
+                    formData.append('status', status);
+
+                    fetch(`/update-task-status/${taskId}`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => {
+                            if (response.ok) {
+                                console.log('Estado actualizado exitosamente');
+                            } else {
+                                console.error('Error al actualizar el estado');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al actualizar el estado:', error);
+                        });
+                });
+            });
+        });
+    </script>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sticky-top mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Añadir tarea</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="input-group">
+                                <form action="/new-task" method="post">
+                                    <label>Título</label>
+                                    <input type="text" class="form-control mb-3" name="title" required>
+
+                                    <label>Descripción</label>
+                                    <textarea class="form-control mb-3" rows="5" name="description" required></textarea>
+
+                                    <label>Fecha de Inicio</label>
+                                    <input type="datetime-local" class="form-control mb-3" name="start_date"
+                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+
+                                    <label>Fecha de Fin</label>
+                                    <input type="datetime-local" class="form-control mb-3" name="end_date"
+                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+
+                                    <button type="submit" class="btn btn-primary w-100">Guardar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- /.col -->
+            <div class="col-md-9">
+                <div class="card card-primary">
+                    <div class="card-body p-0">
+                        <!-- THE CALENDAR -->
+                        <div id="calendar"></div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h4 class="card-title">Tareas Pendientes</h4>
+                    </div>
+                    <div class="card-body">
+                        <!-- Tareas -->
+                        <div class="row row-cols-1 row-cols-md-3 g-4 mt-3">
+                            {% for task in tasks %}
+                            <div class="col">
+                                <div class="card h-100">
+                                    <div class="card-header">
+                                        {{ task.title }}
+                                    </div>
+                                    <div class="card-body">
+                                        {{ task.description }}
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="row">
+                                            <div class="col-12 mb-2">
+                                                <small class="text-muted">Fecha: {{ task.date_task }}</small>
+                                            </div>
+                                            <div class="col-12">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <small class="text-muted">Asignada a: {{
+                                                            task.assigned_user_email }}</small>
+                                                    </div>
+                                                    <div>
+                                                        <form class="status-form" data-task-id="{{ task.id }}">
+                                                            <select name="status"
+                                                                class="form-select form-select-sm ms-2">
+                                                                <option value="Pendiente" {% if task.status=='Pendiente'
+                                                                    %}selected{% endif %}>Pendiente</option>
+                                                                <option value="Realizado" {% if task.status=='Realizado'
+                                                                    %}selected{% endif %}>Realizado</option>
+                                                                <option value="Pospuesto" {% if task.status=='Pospuesto'
+                                                                    %}selected{% endif %}>Pospuesto</option>
+                                                            </select>
+                                                        </form>
+                                                        <div class="btn-group ms-2" role="group">
+                                                            <a href="{{ url_for('edit_group_task', task_id=task.id, group_id=group.0) }}"
+                                                                class="btn btn-outline-primary btn-sm">Editar</a>
+                                                            <form action="/delete-group-task" method="POST"
+                                                                class="d-inline">
+                                                                <input type="hidden" value="{{ task.id }}" name="id">
+                                                                <input type="hidden" value="{{ group.0 }}"
+                                                                    name="group_id">
+                                                                <button type="submit"
+                                                                    class="btn btn-outline-danger btn-sm">Eliminar</button>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                        </div>
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+            </div>
+        </div>
+        <!-- /.row -->
+    </div><!-- /.container-fluid -->
+</section>
+<!-- /.content -->
+<script>
+    function loadTaskData(id, title, description, date_task, date_end) {
+        document.getElementById('editTaskId').value = id;
+        document.getElementById('editTitle').value = title;
+        document.getElementById('editDescription').value = description;
+        document.getElementById('editStartDate').value = date_task.replace(' ', 'T');
+        document.getElementById('editEndDate').value = date_end.replace(' ', 'T');
+    }
+</script>
 
 <div class="container mt-3">
     <!-- Tareas -->
@@ -174,16 +388,16 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => {
-                    if (response.ok) {
-                        console.log('Estado actualizado exitosamente');
-                    } else {
-                        console.error('Error al actualizar el estado');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error al actualizar el estado:', error);
-                });
+                    .then(response => {
+                        if (response.ok) {
+                            console.log('Estado actualizado exitosamente');
+                        } else {
+                            console.error('Error al actualizar el estado');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al actualizar el estado:', error);
+                    });
             });
         });
     });
@@ -201,18 +415,18 @@
     function loadChatMessages() {
         const groupId = document.getElementById('chat-group-id').value;
         fetch(`/get-group-chat/${groupId}`)
-        .then(response => response.json())
-        .then(messages => {
-            const chatMessages = document.getElementById('chat-messages');
-            chatMessages.innerHTML = '';
-            messages.forEach(message => {
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('chat-message');
-                messageDiv.innerHTML = `<span class="chat-message-user">${message.user_email}:</span> ${message.message}`;
-                chatMessages.appendChild(messageDiv);
+            .then(response => response.json())
+            .then(messages => {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = '';
+                messages.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('chat-message');
+                    messageDiv.innerHTML = `<span class="chat-message-user">${message.user_email}:</span> ${message.message}`;
+                    chatMessages.appendChild(messageDiv);
+                });
+                scrollToBottom(chatMessages);
             });
-            scrollToBottom(chatMessages);
-        });
     }
 
     function sendMessage(event) {
@@ -229,15 +443,15 @@
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'Message sent') {
-                chatInput.value = '';
-                loadChatMessages();
-            } else {
-                console.error('Error al enviar el mensaje');
-            }
-        });
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'Message sent') {
+                    chatInput.value = '';
+                    loadChatMessages();
+                } else {
+                    console.error('Error al enviar el mensaje');
+                }
+            });
     }
 
     function startPolling() {
