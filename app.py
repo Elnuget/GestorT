@@ -28,6 +28,9 @@ from flask_apscheduler import APScheduler
 from flask import Flask, request, jsonify, session
 import traceback
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+
+
 
 # Inicializar la aplicación Flask
 app = Flask(__name__)
@@ -79,11 +82,11 @@ def login():
     password = request.form['password']  # Obtiene la contraseña del formulario
 
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-    cur.execute("SELECT * FROM users WHERE email = %s AND password = %s", (email, password))  # Verifica las credenciales del usuario
+    cur.execute("SELECT * FROM users WHERE email = %s", (email,))  # Verifica si el usuario existe
     user = cur.fetchone()  # Recupera el usuario si existe
     cur.close()  # Cierra el cursor
 
-    if user is not None:
+    if user is not None and check_password_hash(user[4], password):  # Verifica la contraseña encriptada
         # Verificar si el usuario ha verificado su correo
         if user[7]:  # La columna 'verified' es la séptima columna (índice 7)
             session['email'] = email  # Almacena el correo electrónico en la sesión
@@ -96,6 +99,7 @@ def login():
     else:
         flash('Las credenciales no son correctas', 'danger')  # Muestra un mensaje de error
         return render_template('index.html')
+
 
 @app.route('/api/tasks', methods=['GET'])
 def api_tasks():
@@ -152,11 +156,14 @@ def register():
             flash('El correo electrónico ya está registrado. Por favor, usa otro correo.', 'danger')
             return redirect(url_for('register'))
 
+        # Encriptar la contraseña
+        hashed_password = generate_password_hash(password)
+
         # Si el correo no está registrado, proceder con el registro
         verification_code = randint(100000, 999999)  # Generar un código de verificación de 6 dígitos
         verification_sent_time = datetime.now()  # Obtener el tiempo actual
         sql = "INSERT INTO users (name, surnames, email, password, verification_code, verified, verification_sent_time) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        data = (name, surnames, email, password, verification_code, False, verification_sent_time)
+        data = (name, surnames, email, hashed_password, verification_code, False, verification_sent_time)
         cur.execute(sql, data)
         mysql.connection.commit()
         cur.close()
@@ -177,7 +184,6 @@ def register():
 
 #
 # FALTA: - Colocar un tiempo límite para ingresar el código de verificación
-#       - HASH DE CONTRASEÑAS
 #       - Después de cierto tiempo, borrar el usuario
 #       - En caso de que se haya registrado pero no haya verificado, y se vuelva a registrar, borrar el registro anterior y volver a enviar el código de verificación
 #       - Verificación de contraseñas
