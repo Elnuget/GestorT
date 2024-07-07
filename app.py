@@ -142,9 +142,14 @@ def register():
         surnames = request.form['surnames']
         email = request.form['email']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
 
-        if not name or not surnames or not email or not password:
+        if not name or not surnames or not email or not password or not confirm_password:
             flash('Todos los campos son obligatorios', 'danger')
+            return redirect(url_for('register'))
+
+        if password != confirm_password:
+            flash('Las contraseñas no coinciden', 'danger')
             return redirect(url_for('register'))
 
         cur = mysql.connection.cursor()
@@ -186,7 +191,6 @@ def register():
 # FALTA: - Colocar un tiempo límite para ingresar el código de verificación
 #       - Después de cierto tiempo, borrar el usuario
 #       - En caso de que se haya registrado pero no haya verificado, y se vuelva a registrar, borrar el registro anterior y volver a enviar el código de verificación
-#       - Verificación de contraseñas
 
 @app.route('/verify_email', methods=['GET', 'POST'])
 def verify_email():

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -12,15 +11,12 @@
     integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
     crossorigin="anonymous"></script>
   <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-
 </head>
-
 <body>
   <main class="d-flex">
     <div class="container-fluid row m-0 vh-100 justify-content-center align-items-center">
       <div class="card shadow w-50">
         <div class="card-body">
-
           <!-- Mostrar mensajes flash -->
           {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
@@ -34,34 +30,27 @@
           {% endwith %}
 
           <!-- Formulario de registro -->
-
           <form action="/register" method="post">
             <h3 class="text-center">APLICACIÓN DE TAREAS</h3>
             <h5 class="text-center">Registro de Usuario</h5>
-
             <label>Nombre</label>
-            <input type="text" class="form-control mb-3" name="name">
-
+            <input type="text" class="form-control mb-3" name="name" required>
             <label>Apellidos</label>
-            <input type="text" class="form-control mb-3" name="surnames">
-
+            <input type="text" class="form-control mb-3" name="surnames" required>
             <label>Email</label>
-            <input type="email" class="form-control mb-3" name="email">
-
+            <input type="email" class="form-control mb-3" name="email" required>
             <label>Contraseña</label>
-            <input type="password" class="form-control mb-3" name="password">
-
+            <input type="password" class="form-control mb-3" name="password" required>
+            <label>Confirmar Contraseña</label>
+            <input type="password" class="form-control mb-3" name="confirm_password" required>
             <button type="submit" class="btn btn-success w-100">Registrarse</button>
           </form>
           <form action="/" method="get">
             <button type="submit" class="btn btn-primary w-100 mt-3">Inicio</button>
           </form>
-
         </div>
       </div>
     </div>
   </main>
-
 </body>
-
 </html>
