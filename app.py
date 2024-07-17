@@ -65,6 +65,10 @@ def home():
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
     cur.execute("SELECT * FROM tasks WHERE email = %s ORDER BY date_task DESC", [email])  # Selecciona las tareas del usuario
     tasks = cur.fetchall()  # Recupera todas las tareas del usuario
+
+    if not is_verified_user(email):  # Verifica si el usuario no ha verificado su correo electrónico
+        flash('Debes verificar tu correo electrónico antes de acceder a esta página', 'warning')
+        return redirect(url_for('verify_email'))  # Redirige a la página de verificación de correo
     
     # Procesamiento de los resultados de la consulta para facilitar su uso en la plantilla
     insertObject = []
@@ -311,6 +315,12 @@ def resend_verification():
 
     return redirect(url_for('verify_email'))
 
+def is_verified_user(email):
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT verified FROM users WHERE email = %s", [email])
+    user = cur.fetchone()
+    cur.close()
+    return user and user[0]  # Retorna True si el usuario está verificado, de lo contrario False
 
 
 ##########################################################
@@ -325,6 +335,11 @@ def tasks():
         return render_template('index.html')  # Redirige a la página de inicio de sesión
 
     email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
+
+    if not is_verified_user(email):  # Verifica si el usuario no ha verificado su correo electrónico
+        flash('Debes verificar tu correo electrónico antes de acceder a esta página', 'warning')
+        return redirect(url_for('verify_email'))  # Redirige a la página de verificación de correo
+
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
     cur.execute("SELECT * FROM tasks WHERE email = %s ORDER BY date_task DESC", [email])  # Selecciona las tareas del usuario en orden descendente por fecha
     tasks = cur.fetchall()  # Recupera todas las tareas del usuario
@@ -591,6 +606,11 @@ def groups():
 
     email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
+
+    if not is_verified_user(email):  # Verifica si el usuario no ha verificado su correo electrónico
+        flash('Debes verificar tu correo electrónico antes de acceder a esta página', 'warning')
+        return redirect(url_for('verify_email'))  # Redirige a la página de verificación de correo
+
     cur.execute("SELECT * FROM `groups` WHERE created_by = %s", [email])  # Selecciona los grupos creados por el usuario
     user_groups = cur.fetchall()  # Recupera todos los grupos del usuario
     columnNames = [column[0] for column in cur.description]  # Obtiene los nombres de las columnas de la consulta
@@ -675,6 +695,10 @@ def group_tasks(group_id):
         email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
         d = datetime.now()  # Obtiene la fecha y hora actual
         date_task = d.strftime("%Y-%m-%d %H:%M:%S")  # Formatea la fecha y hora actual
+
+        if not is_verified_user(email):  # Verifica si el usuario no ha verificado su correo electrónico
+            flash('Debes verificar tu correo electrónico antes de acceder a esta página', 'warning')
+            return redirect(url_for('verify_email'))  # Redirige a la página de verificación de correo
 
         # Verificación de la existencia de datos y almacenamiento en la base de datos
         if title and description and email and assigned_user_email:  # Verifica que todos los campos están llenos
