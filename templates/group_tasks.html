@@ -64,22 +64,7 @@
     }
 </style>
 
-<!-- Content Header (Page header) -->
-<section class="content-header">
-    <div class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-sm-6">
-                <h1>Calendar</h1>
-            </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="#">Home</a></li>
-                    <li class="breadcrumb-item active">Gruup Tasks</li>
-                </ol>
-            </div>
-        </div>
-    </div><!-- /.container-fluid -->
-</section>
+
 
 <!-- Main content -->
 <section class="content">
@@ -163,37 +148,47 @@
                         </div>
                         <div class="card-body">
                             <div class="input-group">
-                                <form action="/new-task" method="post">
-                                    <label>Título</label>
-                                    <input type="text" class="form-control mb-3" name="title" required>
-
-                                    <label>Descripción</label>
-                                    <textarea class="form-control mb-3" rows="5" name="description" required></textarea>
-
-                                    <label>Fecha de Inicio</label>
-                                    <input type="datetime-local" class="form-control mb-3" name="start_date"
-                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
-
-                                    <label>Fecha de Fin</label>
-                                    <input type="datetime-local" class="form-control mb-3" name="end_date"
-                                        value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
-
+                                <form action="/group-tasks/{{ group.0 }}" method="post">
+                                    <label for="title">Título</label>
+                                    <input type="text" class="form-control mb-3" id="title" name="title" required>
+                    
+                                    <label for="description">Descripción</label>
+                                    <textarea class="form-control mb-3" id="description" rows="5" name="description" required></textarea>
+                    
+                                    <label for="assigned_user_email">Correo del Usuario Asignado</label>
+                                    <select class="form-control mb-3" id="assigned_user_email" name="assigned_user_email" required>
+                                        {% for email in members_emails %}
+                                            <option value="{{ email }}">{{ email }}</option>
+                                        {% endfor %}
+                                    </select>
+                    
+                                    <label for="date_task">Fecha de Tarea</label>
+                                    <input type="datetime-local" class="form-control mb-3" id="date_task" name="date_task" value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+                    
+                                    <label for="date_end">Fecha de Fin</label>
+                                    <input type="datetime-local" class="form-control mb-3" id="date_end" name="date_end" value="{{ datetime.now().strftime('%Y-%m-%dT%H:%M') }}" required>
+                    
+                                    <label for="status">Estado</label>
+                                    <select class="form-control mb-3" id="status" name="status">
+                                        <option value="Pendiente">Pendiente</option>
+                                        <option value="Realizado">Realizado</option>
+                                        <option value="Pospuesto">Pospuesto</option>
+                                    </select>
+                    
                                     <button type="submit" class="btn btn-primary w-100">Guardar</button>
                                 </form>
                             </div>
                         </div>
                     </div>
+                    
+                    
+                    
+                    
                 </div>
             </div>
             <!-- /.col -->
             <div class="col-md-9">
-                <div class="card card-primary">
-                    <div class="card-body p-0">
-                        <!-- THE CALENDAR -->
-                        <div id="calendar"></div>
-                    </div>
-                    <!-- /.card-body -->
-                </div>
+                
                 <!-- /.card -->
                 <div class="card mt-3">
                     <div class="card-header">
@@ -275,59 +270,7 @@
     }
 </script>
 
-<div class="container mt-3">
-    <!-- Tareas -->
-    <div class="row row-cols-1 row-cols-md-3 g-3 mt-3">
-        {% for task in tasks %}
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-header">
-                    {{ task.title }}
-                </div>
-                <div class="card-body">
-                    {{ task.description }}
-                </div>
-                <div class="card-footer">
-                    <div class="row">
-                        <div class="col-12 mb-2">
-                            <small class="text-muted">Fecha: {{ task.date_task }}</small>
-                        </div>
-                        <div class="col-12">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <small class="text-muted">Asignada a: {{ task.assigned_user_email }}</small>
-                                </div>
-                                <div>
-                                    <form class="status-form" data-task-id="{{ task.id }}">
-                                        <select name="status" class="form-select form-select-sm ms-2">
-                                            <option value="Pendiente" {% if task.status=='Pendiente' %}selected{% endif
-                                                %}>Pendiente</option>
-                                            <option value="Realizado" {% if task.status=='Realizado' %}selected{% endif
-                                                %}>Realizado</option>
-                                            <option value="Pospuesto" {% if task.status=='Pospuesto' %}selected{% endif
-                                                %}>Pospuesto</option>
-                                        </select>
-                                    </form>
-                                    <div class="btn-group ms-2" role="group">
-                                        <a href="{{ url_for('edit_group_task', task_id=task.id, group_id=group.0) }}"
-                                            class="btn btn-outline-primary btn-sm">Editar</a>
-                                        <form action="/delete-group-task" method="POST" class="d-inline">
-                                            <input type="hidden" value="{{ task.id }}" name="id">
-                                            <input type="hidden" value="{{ group.0 }}" name="group_id">
-                                            <button type="submit"
-                                                class="btn btn-outline-danger btn-sm">Eliminar</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-</div>
+
 
 <!-- Modal de tareas -->
 <div class="modal fade" id="task-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">

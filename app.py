@@ -680,7 +680,6 @@ def edit_group(group_id):
     return render_template('edit_group.html', group=group)  # Renderiza la plantilla de edición de grupo con los datos obtenidos
 
 
-# Ruta para visualizar las tareas dentro de un grupo
 @app.route('/group-tasks/<int:group_id>', methods=['GET', 'POST'])
 def group_tasks(group_id):
     if 'email' not in session:  # Verifica si el usuario no ha iniciado sesión
@@ -695,6 +694,8 @@ def group_tasks(group_id):
         email = session['email']  # Obtiene el correo electrónico del usuario desde la sesión
         d = datetime.now()  # Obtiene la fecha y hora actual
         date_task = d.strftime("%Y-%m-%d %H:%M:%S")  # Formatea la fecha y hora actual
+        date_end = request.form.get('date_end')  # Obtiene la fecha de finalización de la tarea del formulario
+        status = request.form.get('status', 'Pendiente')  # Obtiene el estado de la tarea del formulario, por defecto 'Pendiente'
 
         if not is_verified_user(email):  # Verifica si el usuario no ha verificado su correo electrónico
             flash('Debes verificar tu correo electrónico antes de acceder a esta página', 'warning')
@@ -712,8 +713,11 @@ def group_tasks(group_id):
                 # El usuario existe, proceder con la inserción en group_tasks
                 try:
                     cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
-                    sql = "INSERT INTO group_tasks (group_id, user_email, title, description, assigned_user_email, date_task) VALUES (%s, %s, %s, %s, %s, %s)"  # Consulta SQL para insertar una nueva tarea de grupo
-                    data = (group_id, email, title, description, assigned_user_email, date_task)  # Datos a insertar
+                    sql = """
+                        INSERT INTO group_tasks (group_id, user_email, title, description, assigned_user_email, date_task, date_end, status, created_at, updated_at) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                    """  # Consulta SQL para insertar una nueva tarea de grupo
+                    data = (group_id, email, title, description, assigned_user_email, date_task, date_end, status)  # Datos a insertar
                     cur.execute(sql, data)  # Ejecuta la consulta
                     mysql.connection.commit()  # Confirma los cambios en la base de datos
                     notify_users({'message': 'Nueva tarea creada'})  # Notificar a los usuarios
@@ -732,7 +736,19 @@ def group_tasks(group_id):
     cur.execute("SELECT * FROM `groups` WHERE id = %s", [group_id])  # Consulta para obtener los detalles del grupo
     group = cur.fetchone()  # Obtiene el resultado de la consulta
 
+    # Obtener correos de los miembros del grupo
+    cur.execute("SELECT group_members FROM `groups` WHERE id = %s", [group_id])  # Consulta para obtener los correos de los miembros del grupo
+    group_members = cur.fetchone()  # Obtiene el resultado de la consulta
+    cur.close()  # Cierra el cursor
+
+    # Verificar si se obtuvieron los correos de los miembros
+    if group_members and group_members[0]:  # Verifica que group_members no sea None y que contenga la columna group_members
+        members_emails = group_members[0].split(',')  # Divide los correos en una lista
+    else:
+        members_emails = []
+
     # Obtener tareas asociadas con el grupo
+    cur = mysql.connection.cursor()  # Crea un cursor para ejecutar comandos SQL
     cur.execute("SELECT * FROM group_tasks WHERE group_id = %s", [group_id])  # Consulta para obtener las tareas del grupo
     tasks = cur.fetchall()  # Obtiene todos los resultados de la consulta
     title = 'Tareas de Grupo | Task Manager'  # Título de la página
@@ -744,7 +760,9 @@ def group_tasks(group_id):
         insertObject.append(dict(zip(columnNames, record)))  # Convierte los resultados en una lista de diccionarios
     cur.close()  # Cierra el cursor
 
-    return render_template('group_tasks.html', group=group, tasks=insertObject, title=title)  # Renderiza la plantilla con los datos obtenidos
+    return render_template('group_tasks.html', group=group, tasks=insertObject, members_emails=members_emails, title=title)  # Renderiza la plantilla con los datos obtenidos
+
+
 
 
 # Ruta para eliminar una tarea de grupo
